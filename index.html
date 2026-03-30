@@ -172,15 +172,22 @@ async function loadPapers() {
              let opt = document.createElement('option');
              opt.value = index; 
              
-             // ตรวจสอบว่ามี Link หรือไม่
-             if (!p.link || p.link.trim() === "") {
-               // กรณีไม่มี Link: ให้แสดงชื่อ เติมข้อความต่อท้าย และตั้งค่าให้กดไม่ได้ (สีเทา)
-               opt.text = `[${p.institute}] ${p.name} - ${p.title} (ยังไม่มี Link)`;
+             // เงื่อนไขที่ 1: ยังไม่ได้ส่งชื่อเรื่อง (ไม่มี Title)
+             if (!p.title || p.title === "") {
+               opt.text = `[${p.institute}] ${p.name} - (ยังไม่ได้ส่งชื่อเรื่อง)`;
                opt.disabled = true; 
-               opt.style.color = "#999999"; // บังคับให้เป็นสีเทาชัดเจนขึ้น
-             } else {
-               // กรณีมี Link ปกติ
+               opt.style.color = "#ff6b6b"; // สีแดงอ่อน
+             } 
+             // เงื่อนไขที่ 2: มีชื่อเรื่องแล้ว แต่ยังไม่มีลิงก์เอกสาร
+             else if (!p.link || p.link === "") {
+               opt.text = `[${p.institute}] ${p.name} - ${p.title} (ยังไม่ส่งเอกสาร)`;
+               opt.disabled = true; 
+               opt.style.color = "#74b9ff"; // สีฟ้าอ่อน
+             } 
+             // เงื่อนไขที่ 3: มีครบทั้งชื่อเรื่องและเอกสาร พร้อมตรวจ
+             else {
                opt.text = `[${p.institute}] ${p.name} - ${p.title}`;
+               opt.style.color = "#24292f"; // สีดำปกติของ GitHub
              }
              
              paperDropdown.appendChild(opt);
@@ -188,7 +195,7 @@ async function loadPapers() {
         }
       }
     }
-
+    
     function showPaperDetails() {
       const index = document.getElementById('paperSelect').value;
       const detailsDiv = document.getElementById('paperDetails');
