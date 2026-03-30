@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ตรวจ Paper Resident Skin</title>
+  <title>ระบบตรวจบทความแพทย์ประจำบ้าน</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { background-color: #f6f8fa; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
@@ -33,24 +33,24 @@
 
   <div id="loginPage" class="container" style="max-width: 400px; margin-top: 50px;">
     <div class="card p-4 text-center">
-      <h4 class="mb-4" style="color: #24292f;">อฝส ตรวจ Paper Resident</h4>
-      <input type="password" id="mdidInput" class="form-control mb-3 text-center" placeholder="กรอก เลข ว.">
-      <button class="btn btn-success w-100" style="background-color: #2da44e; border: none;" onclick="">เข้าสู่ระบบ</button>
+      <h4 class="mb-4" style="color: #24292f;">ระบบตรวจบทความ</h4>
+      <input type="password" id="mdidInput" class="form-control mb-3 text-center" placeholder="กรอกหมายเลข MDID">
+      <button class="btn btn-success w-100" style="background-color: #2da44e; border: none;" onclick="login()">เข้าสู่ระบบ</button>
     </div>
   </div>
 
   <div id="selectionPage" class="container hidden" style="max-width: 600px;">
     <div class="card p-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">เลือก Paper เพื่อตรวจ</h5>
+        <h5 class="mb-0">เลือกบทความเพื่อตรวจ</h5>
         <button class="btn btn-sm btn-outline-danger" onclick="logout()">ออกจากระบบ</button>
       </div>
       <p id="userInfo" class="text-muted small"></p>
-
-<label class="fw-bold mb-1">เลือกหมวดหมู่ (Sheet):</label>
+      
+      <label class="fw-bold mb-1">เลือกหมวดหมู่ (Sheet):</label>
       <select id="sheetSelect" class="form-select mb-3" onchange="loadPapers()">
         <option value="">-- กรุณาเลือก --</option>
-      </select>      
+      </select>
 
       <label class="fw-bold mb-1">เลือกบทความ:</label>
       <select id="paperSelect" class="form-select mb-3" onchange="showPaperDetails()">
@@ -83,15 +83,15 @@
       <textarea id="noteInput" class="form-control mb-4" rows="3" placeholder="ระบุเหตุผล (บังคับกรอกหาก FAIL)"></textarea>
 
       <div class="d-flex gap-2">
-        <button class="btn btn-secondary w-50" onclick="cancelReview()">ยกเลิก</button>
+        <button class="btn btn-secondary w-50" onclick="cancelReview()">ยกเลิก / กลับ</button>
         <button id="btnSubmit" class="btn btn-success w-50" onclick="submitReview()">ยืนยันผล</button>
       </div>
     </div>
   </div>
 
   <script>
-    // ⚠️ นำ URL ของ Web App (Google Apps Script) ที่ Deploy ได้มาวางตรงนี้
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzYVC__uA8WwJdbud7Wnm1pB99BiyAXLVyjutGYQza2aLURllCqHuQY5iUHntMfAuM/exec'; 
+    // ⚠️ ตรงนี้สำคัญมาก: นำลิงก์ Web App ของ Google มาวางในเครื่องหมายคำพูดด้านล่าง
+    const API_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'; 
 
     let currentUser = {};
     let currentPapers = [];
@@ -101,18 +101,19 @@
       document.getElementById('loadingText').innerText = text || "กำลังประมวลผล...";
       document.getElementById('loadingOverlay').classList.remove('hidden');
     }
+    
     function hideLoading() {
       document.getElementById('loadingOverlay').classList.add('hidden');
     }
 
-    // ฟังก์ชันหลักสำหรับคุยกับ Google Apps Script ผ่าน fetch
-  async function callAPI(payload) {
+    // ฟังก์ชันยิง API ไปหา Google Script (แก้ปัญหาโดนบล็อก CORS เรียบร้อย)
+    async function callAPI(payload) {
       try {
         const response = await fetch(API_URL, {
           method: 'POST',
-          redirect: "follow", // <-- เพิ่มบรรทัดนี้
+          redirect: "follow", 
           headers: {
-            "Content-Type": "text/plain;charset=utf-8", // <-- เพิ่มบรรทัดนี้
+            "Content-Type": "text/plain;charset=utf-8"
           },
           body: JSON.stringify(payload)
         });
@@ -124,7 +125,7 @@
       }
     }
 
-async function login() {
+    async function login() {
       const mdid = document.getElementById('mdidInput').value;
       if(!mdid) return alert('กรุณากรอก MDID');
       
@@ -136,7 +137,7 @@ async function login() {
         currentUser = res;
         document.getElementById('userInfo').innerText = `ผู้ตรวจ: ${res.staffName} (${res.staffInst})`;
         
-        // ---- ส่วนที่เพิ่มใหม่: เติมตัวเลือก Sheet จากข้อมูลที่ดึงมา ----
+        // เติมตัวเลือก Sheet
         const sheetSelect = document.getElementById('sheetSelect');
         sheetSelect.innerHTML = '<option value="">-- กรุณาเลือกหมวดหมู่ --</option>';
         if(res.displaySheets && res.displaySheets.length > 0) {
@@ -157,7 +158,7 @@ async function login() {
       }
     }
 
-async function loadPapers() {
+    async function loadPapers() {
       const sheet = document.getElementById('sheetSelect').value;
       const paperDropdown = document.getElementById('paperSelect');
       document.getElementById('paperDetails').classList.add('hidden');
@@ -188,42 +189,30 @@ async function loadPapers() {
              let opt = document.createElement('option');
              opt.value = index; 
              
-             // รูปแบบพื้นฐาน: [สถาบัน] ชื่อ (PASS: X) - Title
              let displayTitle = p.title ? p.title : "(ยังไม่ได้ส่งชื่อเรื่อง)";
              let baseText = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - ${displayTitle}`;
              
-             // เงื่อนไขที่ 1: เป็นเด็กสถาบันตนเอง (ห้ามตรวจ)
              if (p.isOwnInst) {
                opt.text = `${baseText} (สถาบันตนเอง)`;
                opt.disabled = true;
                opt.style.color = "#a0a0a0"; 
-             }
-             // เงื่อนไขที่ 2: ตัวเองเคยตรวจคนนี้ไปแล้ว (ห้ามตรวจซ้ำ)
-             else if (p.isReviewed) {
+             } else if (p.isReviewed) {
                opt.text = `${baseText} (เคยตรวจแล้ว)`;
                opt.disabled = true;
                opt.style.color = "#a0a0a0"; 
-             }
-             // เงื่อนไขที่ 3: PASS ครบ 3 ครั้งแล้ว (ห้ามตรวจเพิ่ม)
-             else if (p.passCount >= 3) {
+             } else if (p.passCount >= 3) {
                opt.text = `${baseText} (PASS ครบ 3 แล้ว)`;
                opt.disabled = true;
-               opt.style.color = "#2da44e"; // เปลี่ยนเป็นสีเขียว เพื่อให้รู้ว่าจบกระบวนการแล้ว
-             }
-             // เงื่อนไขที่ 4: ยังไม่ได้ส่งชื่อเรื่อง
-             else if (!p.title || p.title === "") {
+               opt.style.color = "#2da44e"; 
+             } else if (!p.title || p.title === "") {
                opt.text = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - (ยังไม่ได้ส่งชื่อเรื่อง)`;
                opt.disabled = true; 
                opt.style.color = "#ff6b6b"; 
-             } 
-             // เงื่อนไขที่ 5: มีชื่อเรื่องแล้ว แต่ยังไม่มีลิงก์เอกสาร
-             else if (!p.link || p.link === "") {
+             } else if (!p.link || p.link === "") {
                opt.text = `${baseText} (ยังไม่ส่งเอกสาร)`;
                opt.disabled = true; 
                opt.style.color = "#74b9ff"; 
-             } 
-             // เงื่อนไขที่ 6: มีครบ พร้อมตรวจ
-             else {
+             } else {
                opt.text = baseText;
                opt.style.color = "#24292f"; 
              }
@@ -233,7 +222,7 @@ async function loadPapers() {
         }
       }
     }
-    
+
     function showPaperDetails() {
       const index = document.getElementById('paperSelect').value;
       const detailsDiv = document.getElementById('paperDetails');
@@ -308,6 +297,7 @@ async function loadPapers() {
       hideLoading();
 
       if(res && res.success) {
+        alert("บันทึกผลสำเร็จ!");
         loadPapers();
         cancelReview(); 
       } else {
