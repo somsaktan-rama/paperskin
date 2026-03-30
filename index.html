@@ -106,10 +106,14 @@
     }
 
     // ฟังก์ชันหลักสำหรับคุยกับ Google Apps Script ผ่าน fetch
-    async function callAPI(payload) {
+  async function callAPI(payload) {
       try {
         const response = await fetch(API_URL, {
           method: 'POST',
+          redirect: "follow", // <-- เพิ่มบรรทัดนี้
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8", // <-- เพิ่มบรรทัดนี้
+          },
           body: JSON.stringify(payload)
         });
         return await response.json();
