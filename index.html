@@ -141,7 +141,7 @@
       }
     }
 
-    async function loadPapers() {
+async function loadPapers() {
       const sheet = document.getElementById('sheetSelect').value;
       const paperDropdown = document.getElementById('paperSelect');
       document.getElementById('paperDetails').classList.add('hidden');
@@ -164,13 +164,25 @@
       if(res && res.success) {
         currentPapers = res.data;
         paperDropdown.innerHTML = '<option value="">-- เลือกบทความ --</option>';
+        
         if(currentPapers.length === 0) {
            paperDropdown.innerHTML = '<option value="">-- ไม่มีบทความที่สามารถตรวจได้ --</option>';
         } else {
            currentPapers.forEach((p, index) => {
              let opt = document.createElement('option');
              opt.value = index; 
-             opt.text = `[${p.institute}] ${p.name} - ${p.title}`;
+             
+             // ตรวจสอบว่ามี Link หรือไม่
+             if (!p.link || p.link.trim() === "") {
+               // กรณีไม่มี Link: ให้แสดงชื่อ เติมข้อความต่อท้าย และตั้งค่าให้กดไม่ได้ (สีเทา)
+               opt.text = `[${p.institute}] ${p.name} - ${p.title} (ยังไม่มี Link)`;
+               opt.disabled = true; 
+               opt.style.color = "#999999"; // บังคับให้เป็นสีเทาชัดเจนขึ้น
+             } else {
+               // กรณีมี Link ปกติ
+               opt.text = `[${p.institute}] ${p.name} - ${p.title}`;
+             }
+             
              paperDropdown.appendChild(opt);
            });
         }
