@@ -1,1 +1,274 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบตรวจบทความ</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f6f8fa; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .card { border-radius: 6px; border: 1px solid #d0d7de; box-shadow: 0 1px 3px rgba(27,31,36,0.12); margin-bottom: 20px; background: #fff;}
+    .hidden { display: none !important; }
+    
+    /* Loading สไตล์ GitHub */
+    #loadingOverlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.85);
+      display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 9999;
+    }
+    .spinner {
+      border: 4px solid #e1e4e8; border-top: 4px solid #0969da;
+      border-radius: 50%; width: 50px; height: 50px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
 
+  <div id="loadingOverlay" class="hidden">
+    <div class="spinner"></div>
+    <div class="mt-3 fw-bold" style="color:#24292f;" id="loadingText">กำลังประมวลผล...</div>
+  </div>
+
+  <div id="loginPage" class="container" style="max-width: 400px; margin-top: 50px;">
+    <div class="card p-4 text-center">
+      <h4 class="mb-4" style="color: #24292f;">ระบบตรวจบทความ</h4>
+      <input type="password" id="mdidInput" class="form-control mb-3 text-center" placeholder="กรอกหมายเลข MDID">
+      <button class="btn btn-success w-100" style="background-color: #2da44e; border: none;" onclick="login()">เข้าสู่ระบบ</button>
+    </div>
+  </div>
+
+  <div id="selectionPage" class="container hidden" style="max-width: 600px;">
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">เลือกบทความเพื่อตรวจ</h5>
+        <button class="btn btn-sm btn-outline-danger" onclick="logout()">ออกจากระบบ</button>
+      </div>
+      <p id="userInfo" class="text-muted small"></p>
+      
+      <label class="fw-bold mb-1">เลือกหมวดหมู่ (Sheet):</label>
+      <select id="sheetSelect" class="form-select mb-3" onchange="loadPapers()">
+        <option value="">-- กรุณาเลือก --</option>
+        <option value="Y4-68-Report">Y4-68-Report</option>
+        <option value="Y4-68-Menu">Y4-68-Menu</option>
+        <option value="Y3-68-Report">Y3-68-Report</option>
+      </select>
+
+      <label class="fw-bold mb-1">เลือกบทความ:</label>
+      <select id="paperSelect" class="form-select mb-3" onchange="showPaperDetails()">
+        <option value="">-- รอการดึงข้อมูล --</option>
+      </select>
+      
+      <div id="paperDetails" class="hidden p-3 mb-3" style="background: #ddf4ff; border-radius: 6px; border: 1px solid #b6e3ff;">
+        <div class="mb-1"><strong>Publish:</strong> <span id="lblPublish"></span></div>
+        <div class="mb-1"><strong>Link:</strong> <a href="#" id="lblLink" target="_blank">คลิกดูเอกสาร</a></div>
+        <div><strong>จำนวน PASS:</strong> <span id="lblPassCount" class="badge bg-success"></span></div>
+      </div>
+
+      <button id="btnStartReview" class="btn btn-primary w-100 hidden" onclick="startReview()">เริ่มประเมิน</button>
+    </div>
+  </div>
+
+  <div id="reviewPage" class="container hidden" style="max-width: 600px;">
+    <div class="card p-4">
+      <h5 class="mb-3 text-primary">ลงผลการตรวจ</h5>
+      <h6 id="reviewTitle" class="mb-4 text-dark fw-bold"></h6>
+      
+      <label class="fw-bold mb-1">ผลการตรวจ (Result):</label>
+      <select id="resultSelect" class="form-select mb-3" onchange="checkNoteRequired()">
+        <option value="">-- เลือกผล --</option>
+        <option value="PASS">PASS</option>
+        <option value="FAIL">FAIL</option>
+      </select>
+
+      <label class="fw-bold mb-1">ข้อเสนอแนะ (Note):</label> <span id="noteStar" class="text-danger hidden">*</span>
+      <textarea id="noteInput" class="form-control mb-4" rows="3" placeholder="ระบุเหตุผล (บังคับกรอกหาก FAIL)"></textarea>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-secondary w-50" onclick="cancelReview()">ยกเลิก</button>
+        <button id="btnSubmit" class="btn btn-success w-50" onclick="submitReview()">ยืนยันผล</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ นำ URL ของ Web App (Google Apps Script) ที่ Deploy ได้มาวางตรงนี้
+    const API_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'; 
+
+    let currentUser = {};
+    let currentPapers = [];
+    let selectedPaper = {};
+
+    function showLoading(text) {
+      document.getElementById('loadingText').innerText = text || "กำลังประมวลผล...";
+      document.getElementById('loadingOverlay').classList.remove('hidden');
+    }
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.add('hidden');
+    }
+
+    // ฟังก์ชันหลักสำหรับคุยกับ Google Apps Script ผ่าน fetch
+    async function callAPI(payload) {
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        return await response.json();
+      } catch (error) {
+        console.error("API Error:", error);
+        alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        return null;
+      }
+    }
+
+    async function login() {
+      const mdid = document.getElementById('mdidInput').value;
+      if(!mdid) return alert('กรุณากรอก MDID');
+      
+      showLoading("กำลังเข้าสู่ระบบ...");
+      const res = await callAPI({ action: 'verifyLogin', mdid: mdid });
+      hideLoading();
+      
+      if(res && res.success) {
+        currentUser = res;
+        document.getElementById('userInfo').innerText = `ผู้ตรวจ: ${res.staffName} (${res.staffInst})`;
+        document.getElementById('loginPage').classList.add('hidden');
+        document.getElementById('selectionPage').classList.remove('hidden');
+      } else if (res) {
+        alert(res.message);
+      }
+    }
+
+    async function loadPapers() {
+      const sheet = document.getElementById('sheetSelect').value;
+      const paperDropdown = document.getElementById('paperSelect');
+      document.getElementById('paperDetails').classList.add('hidden');
+      document.getElementById('btnStartReview').classList.add('hidden');
+      
+      if(!sheet) {
+        paperDropdown.innerHTML = '<option value="">-- กรุณาเลือกหมวดหมู่ --</option>';
+        return;
+      }
+
+      showLoading("กำลังดึงข้อมูลบทความ...");
+      const res = await callAPI({ 
+        action: 'getPapers', 
+        sheetName: sheet, 
+        reviewerInst: currentUser.staffInst,
+        reviewerName: currentUser.staffName
+      });
+      hideLoading();
+      
+      if(res && res.success) {
+        currentPapers = res.data;
+        paperDropdown.innerHTML = '<option value="">-- เลือกบทความ --</option>';
+        if(currentPapers.length === 0) {
+           paperDropdown.innerHTML = '<option value="">-- ไม่มีบทความที่สามารถตรวจได้ --</option>';
+        } else {
+           currentPapers.forEach((p, index) => {
+             let opt = document.createElement('option');
+             opt.value = index; 
+             opt.text = `[${p.institute}] ${p.name} - ${p.title}`;
+             paperDropdown.appendChild(opt);
+           });
+        }
+      }
+    }
+
+    function showPaperDetails() {
+      const index = document.getElementById('paperSelect').value;
+      const detailsDiv = document.getElementById('paperDetails');
+      const btnStart = document.getElementById('btnStartReview');
+      
+      if(index === "") {
+        detailsDiv.classList.add('hidden');
+        btnStart.classList.add('hidden');
+        return;
+      }
+
+      selectedPaper = currentPapers[index];
+      document.getElementById('lblPublish').innerText = selectedPaper.publish || "-";
+      
+      const linkEl = document.getElementById('lblLink');
+      let paperUrl = selectedPaper.link;
+      
+      if (paperUrl) {
+        if (!paperUrl.startsWith('http')) { paperUrl = 'https://' + paperUrl; }
+        linkEl.href = paperUrl;
+        linkEl.innerText = "คลิกดูเอกสาร";
+        linkEl.style.pointerEvents = "auto";
+        linkEl.classList.remove('text-muted');
+      } else {
+        linkEl.href = "#";
+        linkEl.innerText = "ไม่มีลิงก์เอกสาร";
+        linkEl.style.pointerEvents = "none";
+        linkEl.classList.add('text-muted');
+      }
+      
+      document.getElementById('lblPassCount').innerText = selectedPaper.passCount + " คน";
+      detailsDiv.classList.remove('hidden');
+      btnStart.classList.remove('hidden');
+    }
+
+    function startReview() {
+      document.getElementById('selectionPage').classList.add('hidden');
+      document.getElementById('reviewPage').classList.remove('hidden');
+      document.getElementById('reviewTitle').innerText = selectedPaper.title;
+      document.getElementById('resultSelect').value = "";
+      document.getElementById('noteInput').value = "";
+      checkNoteRequired();
+    }
+
+    function checkNoteRequired() {
+      const isFail = document.getElementById('resultSelect').value === 'FAIL';
+      document.getElementById('noteStar').classList.toggle('hidden', !isFail);
+    }
+
+    function cancelReview() {
+      document.getElementById('reviewPage').classList.add('hidden');
+      document.getElementById('selectionPage').classList.remove('hidden');
+    }
+
+    async function submitReview() {
+      const result = document.getElementById('resultSelect').value;
+      const note = document.getElementById('noteInput').value;
+      
+      if(!result) return alert("กรุณาเลือกผลการตรวจ (PASS/FAIL)");
+      if(result === 'FAIL' && !note.trim()) return alert("กรุณาระบุ Note เนื่องจากให้ผลเป็น FAIL");
+
+      const formData = {
+        sheetName: document.getElementById('sheetSelect').value,
+        rowNumber: selectedPaper.rowNumber,
+        staffName: currentUser.staffName,
+        result: result,
+        note: note
+      };
+
+      showLoading("กำลังบันทึกผลการตรวจ...");
+      const res = await callAPI({ action: 'submitReview', formData: formData });
+      hideLoading();
+
+      if(res && res.success) {
+        alert("บันทึกผลสำเร็จ!");
+        loadPapers();
+        cancelReview(); 
+      } else {
+        alert("บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง");
+      }
+    }
+
+    function logout() {
+      document.getElementById('selectionPage').classList.add('hidden');
+      document.getElementById('loginPage').classList.remove('hidden');
+      document.getElementById('mdidInput').value = "";
+      document.getElementById('sheetSelect').value = "";
+      document.getElementById('paperSelect').innerHTML = '<option value="">-- รอการดึงข้อมูล --</option>';
+      document.getElementById('paperDetails').classList.add('hidden');
+      document.getElementById('btnStartReview').classList.add('hidden');
+      currentUser = {};
+    }
+  </script>
+</body>
+</html>
