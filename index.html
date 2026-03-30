@@ -166,25 +166,38 @@ async function loadPapers() {
         paperDropdown.innerHTML = '<option value="">-- เลือกบทความ --</option>';
         
         if(currentPapers.length === 0) {
-           paperDropdown.innerHTML = '<option value="">-- ไม่มีบทความที่สามารถตรวจได้ --</option>';
+           paperDropdown.innerHTML = '<option value="">-- ไม่มีบทความในระบบ --</option>';
         } else {
            currentPapers.forEach((p, index) => {
              let opt = document.createElement('option');
              opt.value = index; 
              
-             // เงื่อนไขที่ 1: ยังไม่ได้ส่งชื่อเรื่อง (ไม่มี Title)
-             if (!p.title || p.title === "") {
+             // เงื่อนไขที่ 1: เป็นเด็กสถาบันตนเอง (ห้ามตรวจ)
+             if (p.isOwnInst) {
+               let displayTitle = p.title ? p.title : "(ยังไม่ได้ส่งชื่อเรื่อง)";
+               opt.text = `[${p.institute}] ${p.name} - ${displayTitle} (สถาบันตนเอง)`;
+               opt.disabled = true;
+               opt.style.color = "#a0a0a0"; // สีเทา
+             }
+             // เงื่อนไขที่ 2: ตัวเองเคยตรวจคนนี้ไปแล้ว (ห้ามตรวจซ้ำ)
+             else if (p.isReviewed) {
+               opt.text = `[${p.institute}] ${p.name} - ${p.title} (เคยตรวจแล้ว)`;
+               opt.disabled = true;
+               opt.style.color = "#a0a0a0"; // สีเทา
+             }
+             // เงื่อนไขที่ 3: ยังไม่ได้ส่งชื่อเรื่อง (ไม่มี Title)
+             else if (!p.title || p.title === "") {
                opt.text = `[${p.institute}] ${p.name} - (ยังไม่ได้ส่งชื่อเรื่อง)`;
                opt.disabled = true; 
                opt.style.color = "#ff6b6b"; // สีแดงอ่อน
              } 
-             // เงื่อนไขที่ 2: มีชื่อเรื่องแล้ว แต่ยังไม่มีลิงก์เอกสาร
+             // เงื่อนไขที่ 4: มีชื่อเรื่องแล้ว แต่ยังไม่มีลิงก์เอกสาร
              else if (!p.link || p.link === "") {
                opt.text = `[${p.institute}] ${p.name} - ${p.title} (ยังไม่ส่งเอกสาร)`;
                opt.disabled = true; 
                opt.style.color = "#74b9ff"; // สีฟ้าอ่อน
              } 
-             // เงื่อนไขที่ 3: มีครบทั้งชื่อเรื่องและเอกสาร พร้อมตรวจ
+             // เงื่อนไขที่ 5: มีครบ พร้อมตรวจ (อยู่คนละสถาบัน และยังไม่เคยตรวจ)
              else {
                opt.text = `[${p.institute}] ${p.name} - ${p.title}`;
                opt.style.color = "#24292f"; // สีดำปกติของ GitHub
