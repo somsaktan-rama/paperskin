@@ -34,7 +34,7 @@
   <div id="loginPage" class="container" style="max-width: 400px; margin-top: 50px;">
     <div class="card p-4 text-center">
       <h4 class="mb-4" style="color: #24292f;">ตรวจบทความแพทย์ประจำบ้าน</h4>
-      <input type="password" id="mdidInput" class="form-control mb-3 text-center" placeholder="กรอกหมายเลข MDID">
+      <input type="password" id="mdidInput" class="form-control mb-3 text-center" placeholder="กรอกเลข ว.">
       <button class="btn btn-success w-100" style="background-color: #2da44e; border: none;" onclick="login()">เข้าสู่ระบบ</button>
     </div>
   </div>
@@ -127,7 +127,7 @@
 
     async function login() {
       const mdid = document.getElementById('mdidInput').value;
-      if(!mdid) return alert('กรุณากรอก MDID');
+      if(!mdid) return alert('กรุณากรอกเลข ว.');
       
       showLoading("กำลังเข้าสู่ระบบ...");
       const res = await callAPI({ action: 'verifyLogin', mdid: mdid });
