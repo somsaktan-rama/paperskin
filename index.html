@@ -127,7 +127,7 @@
 
     async function login() {
       const mdid = document.getElementById('mdidInput').value;
-      if(!mdid) return alert('กรุณากรอก เลข ว.');
+      if(!mdid) return alert('กรุณากรอก MDID');
       
       showLoading("กำลังเข้าสู่ระบบ...");
       const res = await callAPI({ action: 'verifyLogin', mdid: mdid });
@@ -135,9 +135,11 @@
       
       if(res && res.success) {
         currentUser = res;
-        document.getElementById('userInfo').innerText = `ผู้ตรวจ: ${res.staffName} (${res.staffInst})`;
         
-        // เติมตัวเลือก Sheet
+        // แสดงชื่อผู้ใช้งาน + (ชั้นปี)
+        let displayName = res.isStudent ? `${res.staffName} ${res.year}` : res.staffName;
+        document.getElementById('userInfo').innerText = `ผู้ใช้งาน: ${displayName} (${res.staffInst})`;
+        
         const sheetSelect = document.getElementById('sheetSelect');
         sheetSelect.innerHTML = '<option value="">-- กรุณาเลือกหมวดหมู่ --</option>';
         if(res.displaySheets && res.displaySheets.length > 0) {
@@ -158,7 +160,7 @@
       }
     }
 
-    async function loadPapers() {
+async function loadPapers() {
       const sheet = document.getElementById('sheetSelect').value;
       const paperDropdown = document.getElementById('paperSelect');
       document.getElementById('paperDetails').classList.add('hidden');
@@ -192,29 +194,38 @@
              let displayTitle = p.title ? p.title : "(ยังไม่ได้ส่งชื่อเรื่อง)";
              let baseText = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - ${displayTitle}`;
              
-             if (p.isOwnInst) {
-               opt.text = `${baseText} (สถาบันตนเอง)`;
-               opt.disabled = true;
-               opt.style.color = "#a0a0a0"; 
-             } else if (p.isReviewed) {
-               opt.text = `${baseText} (เคยตรวจแล้ว)`;
-               opt.disabled = true;
-               opt.style.color = "#a0a0a0"; 
-             } else if (p.passCount >= 3) {
-               opt.text = `${baseText} (PASS ครบ 3 แล้ว)`;
-               opt.disabled = true;
-               opt.style.color = "#2da44e"; 
-             } else if (!p.title || p.title === "") {
-               opt.text = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - (ยังไม่ได้ส่งชื่อเรื่อง)`;
-               opt.disabled = true; 
-               opt.style.color = "#ff6b6b"; 
-             } else if (!p.link || p.link === "") {
-               opt.text = `${baseText} (ยังไม่ส่งเอกสาร)`;
-               opt.disabled = true; 
-               opt.style.color = "#74b9ff"; 
+             // --- แยกระบบการแสดงผลระหว่าง นักเรียน และ Staff ---
+             if (currentUser.isStudent) {
+               // หากเป็นนักเรียน: ให้กดดูได้หมด ไม่สนเงื่อนไขสถาบัน (ยกเว้นงานยังไม่ส่ง)
+               if (!p.title || p.title === "") {
+                 opt.text = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - (ยังไม่ได้ส่งชื่อเรื่อง)`;
+                 opt.disabled = true; opt.style.color = "#ff6b6b"; 
+               } else if (!p.link || p.link === "") {
+                 opt.text = `${baseText} (ยังไม่ส่งเอกสาร)`;
+                 opt.disabled = true; opt.style.color = "#74b9ff"; 
+               } else {
+                 opt.text = baseText; opt.style.color = "#24292f"; 
+               }
              } else {
-               opt.text = baseText;
-               opt.style.color = "#24292f"; 
+               // หากเป็น Staff: กรองเงื่อนไขห้ามตรวจตามเดิม
+               if (p.isOwnInst) {
+                 opt.text = `${baseText} (สถาบันตนเอง)`;
+                 opt.disabled = true; opt.style.color = "#a0a0a0"; 
+               } else if (p.isReviewed) {
+                 opt.text = `${baseText} (เคยตรวจแล้ว)`;
+                 opt.disabled = true; opt.style.color = "#a0a0a0"; 
+               } else if (p.passCount >= 3) {
+                 opt.text = `${baseText} (PASS ครบ 3 แล้ว)`;
+                 opt.disabled = true; opt.style.color = "#2da44e"; 
+               } else if (!p.title || p.title === "") {
+                 opt.text = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - (ยังไม่ได้ส่งชื่อเรื่อง)`;
+                 opt.disabled = true; opt.style.color = "#ff6b6b"; 
+               } else if (!p.link || p.link === "") {
+                 opt.text = `${baseText} (ยังไม่ส่งเอกสาร)`;
+                 opt.disabled = true; opt.style.color = "#74b9ff"; 
+               } else {
+                 opt.text = baseText; opt.style.color = "#24292f"; 
+               }
              }
              
              paperDropdown.appendChild(opt);
@@ -222,8 +233,8 @@
         }
       }
     }
-
-    function showPaperDetails() {
+    
+function showPaperDetails() {
       const index = document.getElementById('paperSelect').value;
       const detailsDiv = document.getElementById('paperDetails');
       const btnStart = document.getElementById('btnStartReview');
@@ -256,8 +267,19 @@
       document.getElementById('lblPassCount').innerText = selectedPaper.passCount + " คน";
       detailsDiv.classList.remove('hidden');
       btnStart.classList.remove('hidden');
-    }
 
+      // --- ตรวจสอบสถานะนักเรียน เพื่อทำการบล็อกปุ่มเริ่มประเมิน ---
+      if (currentUser.isStudent) {
+        btnStart.disabled = true;
+        btnStart.innerText = "ดูรายละเอียดได้อย่างเดียว";
+        btnStart.className = "btn w-100 btn-secondary"; // เปลี่ยนปุ่มเป็นสีเทา
+      } else {
+        btnStart.disabled = false;
+        btnStart.innerText = "เริ่มประเมิน";
+        btnStart.className = "btn w-100 btn-primary"; // กลับมาเป็นสีน้ำเงินตามเดิม
+      }
+    }
+    
     function startReview() {
       document.getElementById('selectionPage').classList.add('hidden');
       document.getElementById('reviewPage').classList.remove('hidden');
