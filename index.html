@@ -2,28 +2,17 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ระบบตรวจบทความแพทย์ประจำบ้าน</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
   <style>
     body { background-color: #f6f8fa; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
     .card { border-radius: 6px; border: 1px solid #d0d7de; box-shadow: 0 1px 3px rgba(27,31,36,0.12); margin-bottom: 20px; background: #fff;}
     .hidden { display: none !important; }
-    
-    #loadingOverlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(255, 255, 255, 0.85);
-      display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 9999;
-    }
-    .spinner {
-      border: 4px solid #e1e4e8; border-top: 4px solid #0969da;
-      border-radius: 50%; width: 50px; height: 50px;
-      animation: spin 1s linear infinite;
-    }
+    #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; }
+    .spinner { border: 4px solid #e1e4e8; border-top: 4px solid #0969da; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
@@ -37,9 +26,7 @@
   <div id="loginPage" class="container" style="max-width: 400px; margin-top: 50px;">
     <div class="card p-4 text-center">
       <h4 class="mb-3" style="color: #24292f;">ระบบตรวจบทความ</h4>
-      
       <div id="lineStatus" class="small mb-3 text-muted">กำลังตรวจสอบการเชื่อมต่อ LINE...</div>
-      
       <input type="password" id="mdidInput" class="form-control mb-3 text-center" placeholder="กรอกหมายเลข MDID">
       <button class="btn btn-success w-100" style="background-color: #2da44e; border: none;" onclick="login()">เข้าสู่ระบบ</button>
     </div>
@@ -54,9 +41,12 @@
       <p id="userInfo" class="text-muted small"></p>
       
       <label class="fw-bold mb-1">เลือกหมวดหมู่ (Sheet):</label>
-      <select id="sheetSelect" class="form-select mb-3" onchange="">
-        <option value="">-- กรุณาเลือก --</option>
-      </select>
+      <div class="d-flex gap-2 mb-3">
+        <select id="sheetSelect" class="form-select" onchange="loadPapers()">
+          <option value="">-- กรุณาเลือก --</option>
+        </select>
+        <button class="btn btn-primary text-nowrap" onclick="loadPapers()">ดึงข้อมูล</button>
+      </div>
 
       <label class="fw-bold mb-1">เลือกบทความ:</label>
       <select id="paperSelect" class="form-select mb-3" onchange="showPaperDetails()">
@@ -107,31 +97,26 @@
     let selectedPaper = {};
     let lineData = { uid: null, displayName: null };
 
-    // 🟢 3. ฟังก์ชันเชื่อมต่อ LINE LIFF
     async function initializeLiff() {
       const statusEl = document.getElementById('lineStatus');
       try {
         await liff.init({ liffId: MY_LIFF_ID }); 
-        
         if (liff.isLoggedIn()) {
           const profile = await liff.getProfile();
           lineData.uid = profile.userId;
           lineData.displayName = profile.displayName;
-          
           statusEl.innerText = "✅ เชื่อมต่อ LINE: " + lineData.displayName;
           statusEl.className = "small mb-3 text-success fw-bold";
         } else {
-          statusEl.innerText = "⚠️ ไม่ได้เปิดผ่าน LINE App (จะไม่มีการเก็บข้อมูล LINE)";
+          statusEl.innerText = "⚠️ ไม่ได้เปิดผ่าน LINE App (จะไม่เก็บข้อมูล)";
           statusEl.className = "small mb-3 text-warning fw-bold";
         }
       } catch (err) {
-        statusEl.innerText = "❌ เชื่อมต่อ LINE ไม่สำเร็จ (ตรวจสอบ LIFF ID)";
+        statusEl.innerText = "❌ เชื่อมต่อ LINE ไม่สำเร็จ";
         statusEl.className = "small mb-3 text-danger fw-bold";
-        console.error("LIFF Error:", err);
       }
     }
 
-    // เรียกใช้งาน LIFF ทันทีที่โหลดหน้าเว็บเสร็จ
     window.onload = initializeLiff;
 
     function showLoading(text) {
@@ -146,38 +131,25 @@
     async function callAPI(payload) {
       try {
         const response = await fetch(API_URL, {
-          method: 'POST',
-          redirect: "follow", 
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          method: 'POST', redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
         });
         return await response.json();
       } catch (error) {
-        console.error("API Error:", error);
-        alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
         return null;
       }
     }
 
     async function login() {
       const mdid = document.getElementById('mdidInput').value;
-      if(!mdid) return alert('กรุณากรอก MDID');
+      if(!mdid) return alert('กรุณากรอก เลข ว.');
       
       showLoading("กำลังเข้าสู่ระบบ...");
-      
-      // 🟢 4. ส่งข้อมูล LINE ไปพร้อมกับ MDID
-      const res = await callAPI({ 
-        action: 'verifyLogin', 
-        mdid: mdid,
-        lineUid: lineData.uid,
-        lineName: lineData.displayName
-      });
-      
+      const res = await callAPI({ action: 'verifyLogin', mdid: mdid, lineUid: lineData.uid, lineName: lineData.displayName });
       hideLoading();
       
       if(res && res.success) {
         currentUser = res;
-        
         let displayName = res.isStudent ? `${res.staffName} ${res.year}` : res.staffName;
         document.getElementById('userInfo').innerText = `ผู้ใช้งาน: ${displayName} (${res.staffInst})`;
         
@@ -190,41 +162,29 @@
             opt.text = sheetName;
             sheetSelect.appendChild(opt);
           });
-        } else {
-          sheetSelect.innerHTML = '<option value="">-- ไม่มีสิทธิ์เข้าถึง Sheet ใดๆ --</option>';
         }
-
         document.getElementById('loginPage').classList.add('hidden');
         document.getElementById('selectionPage').classList.remove('hidden');
-      } else if (res) {
-        alert(res.message);
+      } else {
+        alert(res ? res.message : "เชื่อมต่อ API ไม่สำเร็จ");
       }
     }
 
-async function loadPapers() {
+    async function loadPapers() {
       const sheet = document.getElementById('sheetSelect').value;
       const paperDropdown = document.getElementById('paperSelect');
       document.getElementById('paperDetails').classList.add('hidden');
       document.getElementById('btnStartReview').classList.add('hidden');
       
       if(!sheet) {
-        paperDropdown.innerHTML = '<option value="">-- กรุณาเลือกหมวดหมู่ --</option>';
+        paperDropdown.innerHTML = '<option value="">-- กรุณาเลือกหมวดหมู่ก่อน --</option>';
         return;
       }
 
       showLoading("กำลังดึงข้อมูลบทความ...");
-      
-      // ส่งคำสั่งไปดึงข้อมูล
-      const res = await callAPI({ 
-        action: 'getPapers', 
-        sheetName: sheet, 
-        reviewerInst: currentUser.staffInst,
-        reviewerName: currentUser.staffName
-      });
-      
+      const res = await callAPI({ action: 'getPapers', sheetName: sheet, reviewerInst: currentUser.staffInst, reviewerName: currentUser.staffName });
       hideLoading();
       
-      // 🟢 เพิ่มระบบจับ Error ตรงนี้ครับ
       if(res && res.success) {
         currentPapers = res.data;
         paperDropdown.innerHTML = '<option value="">-- เลือกบทความ --</option>';
@@ -235,93 +195,56 @@ async function loadPapers() {
            currentPapers.forEach((p, index) => {
              let opt = document.createElement('option');
              opt.value = index; 
-             
              let displayTitle = p.title ? p.title : "(ยังไม่ได้ส่งชื่อเรื่อง)";
              let baseText = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - ${displayTitle}`;
              
              if (currentUser.isStudent) {
-               if (!p.title || p.title === "") {
-                 opt.text = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - (ยังไม่ได้ส่งชื่อเรื่อง)`;
-                 opt.disabled = true; opt.style.color = "#ff6b6b"; 
-               } else if (!p.link || p.link === "") {
-                 opt.text = `${baseText} (ยังไม่ส่งเอกสาร)`;
-                 opt.disabled = true; opt.style.color = "#74b9ff"; 
-               } else {
-                 opt.text = baseText; opt.style.color = "#24292f"; 
-               }
+               if (!p.title || p.title === "") { opt.text = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - (ยังไม่ได้ส่งชื่อเรื่อง)`; opt.disabled = true; opt.style.color = "#ff6b6b"; }
+               else if (!p.link || p.link === "") { opt.text = `${baseText} (ยังไม่ส่งเอกสาร)`; opt.disabled = true; opt.style.color = "#74b9ff"; }
+               else { opt.text = baseText; opt.style.color = "#24292f"; }
              } else {
-               if (p.isOwnInst) {
-                 opt.text = `${baseText} (สถาบันตนเอง)`;
-                 opt.disabled = true; opt.style.color = "#a0a0a0"; 
-               } else if (p.isReviewed) {
-                 opt.text = `${baseText} (เคยตรวจแล้ว)`;
-                 opt.disabled = true; opt.style.color = "#a0a0a0"; 
-               } else if (p.passCount >= 3) {
-                 opt.text = `${baseText} (PASS ครบ 3 แล้ว)`;
-                 opt.disabled = true; opt.style.color = "#2da44e"; 
-               } else if (!p.title || p.title === "") {
-                 opt.text = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - (ยังไม่ได้ส่งชื่อเรื่อง)`;
-                 opt.disabled = true; opt.style.color = "#ff6b6b"; 
-               } else if (!p.link || p.link === "") {
-                 opt.text = `${baseText} (ยังไม่ส่งเอกสาร)`;
-                 opt.disabled = true; opt.style.color = "#74b9ff"; 
-               } else {
-                 opt.text = baseText; opt.style.color = "#24292f"; 
-               }
+               if (p.isOwnInst) { opt.text = `${baseText} (สถาบันตนเอง)`; opt.disabled = true; opt.style.color = "#a0a0a0"; }
+               else if (p.isReviewed) { opt.text = `${baseText} (เคยตรวจแล้ว)`; opt.disabled = true; opt.style.color = "#a0a0a0"; }
+               else if (p.passCount >= 3) { opt.text = `${baseText} (PASS ครบ 3 แล้ว)`; opt.disabled = true; opt.style.color = "#2da44e"; }
+               else if (!p.title || p.title === "") { opt.text = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - (ยังไม่ได้ส่งชื่อเรื่อง)`; opt.disabled = true; opt.style.color = "#ff6b6b"; }
+               else if (!p.link || p.link === "") { opt.text = `${baseText} (ยังไม่ส่งเอกสาร)`; opt.disabled = true; opt.style.color = "#74b9ff"; }
+               else { opt.text = baseText; opt.style.color = "#24292f"; }
              }
              paperDropdown.appendChild(opt);
            });
         }
       } else {
-        // 🔴 โชว์กล่องข้อความแจ้ง Error เพื่อให้รู้สาเหตุ
-        let errorMsg = res ? res.message : "เชื่อมต่อ API ไม่สำเร็จ หรือลิงก์ผิด";
-        alert("⚠️ ระบบหลังบ้านพบปัญหา:\n" + errorMsg);
-        paperDropdown.innerHTML = `<option value="">-- เกิดข้อผิดพลาด: โปรดแจ้งผู้ดูแล --</option>`;
+        alert("⚠️ ระบบหลังบ้านพบปัญหา: " + (res ? res.message : "ค้นหาข้อมูลไม่สำเร็จ"));
+        paperDropdown.innerHTML = `<option value="">-- เกิดข้อผิดพลาด --</option>`;
       }
     }
-    
+
     function showPaperDetails() {
       const index = document.getElementById('paperSelect').value;
       const detailsDiv = document.getElementById('paperDetails');
       const btnStart = document.getElementById('btnStartReview');
       
-      if(index === "") {
-        detailsDiv.classList.add('hidden');
-        btnStart.classList.add('hidden');
-        return;
-      }
+      if(index === "") { detailsDiv.classList.add('hidden'); btnStart.classList.add('hidden'); return; }
 
       selectedPaper = currentPapers[index];
       document.getElementById('lblPublish').innerText = selectedPaper.publish || "-";
       
       const linkEl = document.getElementById('lblLink');
       let paperUrl = selectedPaper.link;
-      
       if (paperUrl) {
         if (!paperUrl.startsWith('http')) { paperUrl = 'https://' + paperUrl; }
-        linkEl.href = paperUrl;
-        linkEl.innerText = "คลิกดูเอกสาร";
-        linkEl.style.pointerEvents = "auto";
-        linkEl.classList.remove('text-muted');
+        linkEl.href = paperUrl; linkEl.innerText = "คลิกดูเอกสาร"; linkEl.style.pointerEvents = "auto"; linkEl.className = "";
       } else {
-        linkEl.href = "#";
-        linkEl.innerText = "ไม่มีลิงก์เอกสาร";
-        linkEl.style.pointerEvents = "none";
-        linkEl.classList.add('text-muted');
+        linkEl.href = "#"; linkEl.innerText = "ไม่มีลิงก์เอกสาร"; linkEl.style.pointerEvents = "none"; linkEl.className = "text-muted";
       }
       
       document.getElementById('lblPassCount').innerText = selectedPaper.passCount + " คน";
-      detailsDiv.classList.remove('hidden');
-      btnStart.classList.remove('hidden');
+      detailsDiv.classList.remove('hidden'); btnStart.classList.remove('hidden');
 
       if (currentUser.isStudent) {
-        btnStart.disabled = true;
-        btnStart.innerText = "ดูรายละเอียดได้อย่างเดียว";
-        btnStart.className = "btn w-100 btn-secondary"; 
+        btnStart.disabled = true; btnStart.innerText = "ดูรายละเอียดได้อย่างเดียว"; btnStart.className = "btn w-100 btn-secondary"; 
       } else {
-        btnStart.disabled = false;
-        btnStart.innerText = "เริ่มประเมิน";
-        btnStart.className = "btn w-100 btn-primary"; 
+        btnStart.disabled = false; btnStart.innerText = "เริ่มประเมิน"; btnStart.className = "btn w-100 btn-primary"; 
       }
     }
 
@@ -329,9 +252,7 @@ async function loadPapers() {
       document.getElementById('selectionPage').classList.add('hidden');
       document.getElementById('reviewPage').classList.remove('hidden');
       document.getElementById('reviewTitle').innerText = selectedPaper.title;
-      document.getElementById('resultSelect').value = "";
-      document.getElementById('noteInput').value = "";
-      checkNoteRequired();
+      document.getElementById('resultSelect').value = ""; document.getElementById('noteInput').value = ""; checkNoteRequired();
     }
 
     function checkNoteRequired() {
@@ -339,47 +260,28 @@ async function loadPapers() {
       document.getElementById('noteStar').classList.toggle('hidden', !isFail);
     }
 
-    function cancelReview() {
-      document.getElementById('reviewPage').classList.add('hidden');
-      document.getElementById('selectionPage').classList.remove('hidden');
-    }
+    function cancelReview() { document.getElementById('reviewPage').classList.add('hidden'); document.getElementById('selectionPage').classList.remove('hidden'); }
 
     async function submitReview() {
       const result = document.getElementById('resultSelect').value;
       const note = document.getElementById('noteInput').value;
       
-      if(!result) return alert("กรุณาเลือกผลการตรวจ (PASS/FAIL)");
+      if(!result) return alert("กรุณาเลือกผลการตรวจ");
       if(result === 'FAIL' && !note.trim()) return alert("กรุณาระบุ Note เนื่องจากให้ผลเป็น FAIL");
 
-      const formData = {
-        sheetName: document.getElementById('sheetSelect').value,
-        rowNumber: selectedPaper.rowNumber,
-        staffName: currentUser.staffName,
-        result: result,
-        note: note
-      };
-
+      const formData = { sheetName: document.getElementById('sheetSelect').value, rowNumber: selectedPaper.rowNumber, staffName: currentUser.staffName, result: result, note: note };
       showLoading("กำลังบันทึกผลการตรวจ...");
       const res = await callAPI({ action: 'submitReview', formData: formData });
       hideLoading();
 
-      if(res && res.success) {
-        alert("บันทึกผลสำเร็จ!");
-        loadPapers();
-        cancelReview(); 
-      } else {
-        alert("บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง");
-      }
+      if(res && res.success) { alert("บันทึกผลสำเร็จ!"); loadPapers(); cancelReview(); } 
+      else { alert("บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง"); }
     }
 
     function logout() {
-      document.getElementById('selectionPage').classList.add('hidden');
-      document.getElementById('loginPage').classList.remove('hidden');
-      document.getElementById('mdidInput').value = "";
-      document.getElementById('sheetSelect').value = "";
-      document.getElementById('paperSelect').innerHTML = '<option value="">-- รอการดึงข้อมูล --</option>';
-      document.getElementById('paperDetails').classList.add('hidden');
-      document.getElementById('btnStartReview').classList.add('hidden');
+      document.getElementById('selectionPage').classList.add('hidden'); document.getElementById('loginPage').classList.remove('hidden');
+      document.getElementById('mdidInput').value = ""; document.getElementById('sheetSelect').value = ""; document.getElementById('paperSelect').innerHTML = '<option value="">-- รอการดึงข้อมูล --</option>';
+      document.getElementById('paperDetails').classList.add('hidden'); document.getElementById('btnStartReview').classList.add('hidden');
       currentUser = {};
     }
   </script>
