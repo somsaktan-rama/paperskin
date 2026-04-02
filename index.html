@@ -53,7 +53,7 @@
       <p id="userInfo" class="text-muted small"></p>
       
       <label class="fw-bold mb-1">เลือกหมวดหมู่ (Sheet):</label>
-      <select id="sheetSelect" class="form-select mb-3" onchange="loadPapers()">
+      <select id="sheetSelect" class="form-select mb-3" onchange="">
         <option value="">-- กรุณาเลือก --</option>
       </select>
 
@@ -200,7 +200,7 @@
       }
     }
 
-    async function loadPapers() {
+async function loadPapers() {
       const sheet = document.getElementById('sheetSelect').value;
       const paperDropdown = document.getElementById('paperSelect');
       document.getElementById('paperDetails').classList.add('hidden');
@@ -212,14 +212,18 @@
       }
 
       showLoading("กำลังดึงข้อมูลบทความ...");
+      
+      // ส่งคำสั่งไปดึงข้อมูล
       const res = await callAPI({ 
         action: 'getPapers', 
         sheetName: sheet, 
         reviewerInst: currentUser.staffInst,
         reviewerName: currentUser.staffName
       });
+      
       hideLoading();
       
+      // 🟢 เพิ่มระบบจับ Error ตรงนี้ครับ
       if(res && res.success) {
         currentPapers = res.data;
         paperDropdown.innerHTML = '<option value="">-- เลือกบทความ --</option>';
@@ -267,9 +271,14 @@
              paperDropdown.appendChild(opt);
            });
         }
+      } else {
+        // 🔴 โชว์กล่องข้อความแจ้ง Error เพื่อให้รู้สาเหตุ
+        let errorMsg = res ? res.message : "เชื่อมต่อ API ไม่สำเร็จ หรือลิงก์ผิด";
+        alert("⚠️ ระบบหลังบ้านพบปัญหา:\n" + errorMsg);
+        paperDropdown.innerHTML = `<option value="">-- เกิดข้อผิดพลาด: โปรดแจ้งผู้ดูแล --</option>`;
       }
     }
-
+    
     function showPaperDetails() {
       const index = document.getElementById('paperSelect').value;
       const detailsDiv = document.getElementById('paperDetails');
