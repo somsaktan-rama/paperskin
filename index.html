@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ตรวจบทความแพทย์ประจำบ้าน</title>
+  <title>ระบบตรวจบทความแพทย์ประจำบ้าน</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
   <style>
     body { background-color: #f6f8fa; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
     .card { border-radius: 6px; border: 1px solid #d0d7de; box-shadow: 0 1px 3px rgba(27,31,36,0.12); margin-bottom: 20px; background: #fff;}
     .hidden { display: none !important; }
     
-    /* Loading สไตล์ GitHub */
     #loadingOverlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(255, 255, 255, 0.85);
@@ -34,8 +35,11 @@
 
   <div id="loginPage" class="container" style="max-width: 400px; margin-top: 50px;">
     <div class="card p-4 text-center">
-      <h4 class="mb-4" style="color: #24292f;">ตรวจบทความแพทย์ประจำบ้าน</h4>
-      <input type="password" id="mdidInput" class="form-control mb-3 text-center" placeholder="กรอกเลข ว.">
+      <h4 class="mb-3" style="color: #24292f;">ระบบตรวจบทความ</h4>
+      
+      <div id="lineStatus" class="small mb-3 text-muted">กำลังตรวจสอบการเชื่อมต่อ LINE...</div>
+      
+      <input type="password" id="mdidInput" class="form-control mb-3 text-center" placeholder="กรอกหมายเลข MDID">
       <button class="btn btn-success w-100" style="background-color: #2da44e; border: none;" onclick="login()">เข้าสู่ระบบ</button>
     </div>
   </div>
@@ -91,68 +95,43 @@
   </div>
 
   <script>
-    // ⚠️ ตรงนี้สำคัญมาก: นำลิงก์ Web App ของ Google มาวางในเครื่องหมายคำพูดด้านล่าง
+    // ⚠️ 1. ใส่ URL ของ Google Apps Script ที่ลงท้ายด้วย /exec
     const API_URL = 'https://script.google.com/macros/s/AKfycbytmsgF8EgZSc-BvQLlx_mDk3TtcpBx11QNlkJQ34qEj8l2UIyw-jTXQe-8gdZ1CZg/exec'; 
-
-let lineData = { uid: null, displayName: null };
-
-async function initializeLiff() {
-  try {
-    // ⚠️ ตรวจสอบว่าใส่ LIFF ID ที่ถูกต้องจาก LINE Developers แล้ว
-    await liff.init({ liffId: "2009675466-B2Ivei1a" }); 
     
-    if (!liff.isLoggedIn()) {
-      // หากยังไม่ Login ให้สั่งเปิดหน้า Login ของ LINE
-      liff.login(); 
-    } else {
-      // เมื่อ Login แล้ว ให้ดึงข้อมูล Profile
-      const profile = await liff.getProfile();
-      lineData.uid = profile.userId;
-      lineData.displayName = profile.displayName;
-      
-      // แสดงชื่อ LINE บนหน้า Login เพื่อยืนยันว่าดึงข้อมูลสำเร็จ
-      const statusEl = document.getElementById('lineStatus');
-      if (statusEl) {
-        statusEl.innerText = "เชื่อมต่อ LINE: " + lineData.displayName;
-        statusEl.classList.remove('text-muted');
-        statusEl.classList.add('text-success');
-      }
-    }
-  } catch (err) {
-    console.error("LIFF Error:", err);
-  }
-}
+    // ⚠️ 2. ใส่ LIFF ID ที่ได้จาก LINE Developers Console
+    const MY_LIFF_ID = '2009675466-B2Ivei1a'; 
 
-// เรียกใช้งานเมื่อโหลดหน้าจอ
-window.onload = initializeLiff;
-
-// เพิ่มบรรทัดนี้ในหน้า HTML ตรงหน้า Login (เหนือช่อง MDID) เพื่อดูสถานะ
-// <div id="lineStatus" class="text-muted small mb-2">กำลังเชื่อมต่อ LINE...</div>
-
-// เรียกใช้งานเมื่อโหลดหน้าเว็บ
-window.onload = initializeLiff;
-
-// แก้ไขฟังก์ชัน login ให้ส่งค่า LINE ไปด้วย
-async function login() {
-  const mdid = document.getElementById('mdidInput').value;
-  if(!mdid) return alert('กรุณากรอก MDID');
-  
-  showLoading("กำลังเข้าสู่ระบบและเชื่อมต่อ LINE...");
-  
-  // ส่งค่า mdid พร้อมข้อมูล LINE ไปที่ GAS
-  const res = await callAPI({ 
-    action: 'verifyLogin', 
-    mdid: mdid,
-    lineUid: lineData.uid,
-    lineName: lineData.displayName 
-  });
-  
-  hideLoading();
-  // ... (ส่วนที่เหลือของฟังก์ชัน login เหมือนเดิม)
-}
     let currentUser = {};
     let currentPapers = [];
     let selectedPaper = {};
+    let lineData = { uid: null, displayName: null };
+
+    // 🟢 3. ฟังก์ชันเชื่อมต่อ LINE LIFF
+    async function initializeLiff() {
+      const statusEl = document.getElementById('lineStatus');
+      try {
+        await liff.init({ liffId: MY_LIFF_ID }); 
+        
+        if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile();
+          lineData.uid = profile.userId;
+          lineData.displayName = profile.displayName;
+          
+          statusEl.innerText = "✅ เชื่อมต่อ LINE: " + lineData.displayName;
+          statusEl.className = "small mb-3 text-success fw-bold";
+        } else {
+          statusEl.innerText = "⚠️ ไม่ได้เปิดผ่าน LINE App (จะไม่มีการเก็บข้อมูล LINE)";
+          statusEl.className = "small mb-3 text-warning fw-bold";
+        }
+      } catch (err) {
+        statusEl.innerText = "❌ เชื่อมต่อ LINE ไม่สำเร็จ (ตรวจสอบ LIFF ID)";
+        statusEl.className = "small mb-3 text-danger fw-bold";
+        console.error("LIFF Error:", err);
+      }
+    }
+
+    // เรียกใช้งาน LIFF ทันทีที่โหลดหน้าเว็บเสร็จ
+    window.onload = initializeLiff;
 
     function showLoading(text) {
       document.getElementById('loadingText').innerText = text || "กำลังประมวลผล...";
@@ -163,15 +142,12 @@ async function login() {
       document.getElementById('loadingOverlay').classList.add('hidden');
     }
 
-    // ฟังก์ชันยิง API ไปหา Google Script (แก้ปัญหาโดนบล็อก CORS เรียบร้อย)
     async function callAPI(payload) {
       try {
         const response = await fetch(API_URL, {
           method: 'POST',
           redirect: "follow", 
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          },
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
         });
         return await response.json();
@@ -184,16 +160,23 @@ async function login() {
 
     async function login() {
       const mdid = document.getElementById('mdidInput').value;
-      if(!mdid) return alert('กรุณากรอกเลข ว.');
+      if(!mdid) return alert('กรุณากรอก MDID');
       
       showLoading("กำลังเข้าสู่ระบบ...");
-      const res = await callAPI({ action: 'verifyLogin', mdid: mdid });
+      
+      // 🟢 4. ส่งข้อมูล LINE ไปพร้อมกับ MDID
+      const res = await callAPI({ 
+        action: 'verifyLogin', 
+        mdid: mdid,
+        lineUid: lineData.uid,
+        lineName: lineData.displayName
+      });
+      
       hideLoading();
       
       if(res && res.success) {
         currentUser = res;
         
-        // แสดงชื่อผู้ใช้งาน + (ชั้นปี)
         let displayName = res.isStudent ? `${res.staffName} ${res.year}` : res.staffName;
         document.getElementById('userInfo').innerText = `ผู้ใช้งาน: ${displayName} (${res.staffInst})`;
         
@@ -217,7 +200,7 @@ async function login() {
       }
     }
 
-async function loadPapers() {
+    async function loadPapers() {
       const sheet = document.getElementById('sheetSelect').value;
       const paperDropdown = document.getElementById('paperSelect');
       document.getElementById('paperDetails').classList.add('hidden');
@@ -251,9 +234,7 @@ async function loadPapers() {
              let displayTitle = p.title ? p.title : "(ยังไม่ได้ส่งชื่อเรื่อง)";
              let baseText = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - ${displayTitle}`;
              
-             // --- แยกระบบการแสดงผลระหว่าง นักเรียน และ Staff ---
              if (currentUser.isStudent) {
-               // หากเป็นนักเรียน: ให้กดดูได้หมด ไม่สนเงื่อนไขสถาบัน (ยกเว้นงานยังไม่ส่ง)
                if (!p.title || p.title === "") {
                  opt.text = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - (ยังไม่ได้ส่งชื่อเรื่อง)`;
                  opt.disabled = true; opt.style.color = "#ff6b6b"; 
@@ -264,7 +245,6 @@ async function loadPapers() {
                  opt.text = baseText; opt.style.color = "#24292f"; 
                }
              } else {
-               // หากเป็น Staff: กรองเงื่อนไขห้ามตรวจตามเดิม
                if (p.isOwnInst) {
                  opt.text = `${baseText} (สถาบันตนเอง)`;
                  opt.disabled = true; opt.style.color = "#a0a0a0"; 
@@ -284,14 +264,13 @@ async function loadPapers() {
                  opt.text = baseText; opt.style.color = "#24292f"; 
                }
              }
-             
              paperDropdown.appendChild(opt);
            });
         }
       }
     }
-    
-function showPaperDetails() {
+
+    function showPaperDetails() {
       const index = document.getElementById('paperSelect').value;
       const detailsDiv = document.getElementById('paperDetails');
       const btnStart = document.getElementById('btnStartReview');
@@ -325,18 +304,17 @@ function showPaperDetails() {
       detailsDiv.classList.remove('hidden');
       btnStart.classList.remove('hidden');
 
-      // --- ตรวจสอบสถานะนักเรียน เพื่อทำการบล็อกปุ่มเริ่มประเมิน ---
       if (currentUser.isStudent) {
         btnStart.disabled = true;
         btnStart.innerText = "ดูรายละเอียดได้อย่างเดียว";
-        btnStart.className = "btn w-100 btn-secondary"; // เปลี่ยนปุ่มเป็นสีเทา
+        btnStart.className = "btn w-100 btn-secondary"; 
       } else {
         btnStart.disabled = false;
         btnStart.innerText = "เริ่มประเมิน";
-        btnStart.className = "btn w-100 btn-primary"; // กลับมาเป็นสีน้ำเงินตามเดิม
+        btnStart.className = "btn w-100 btn-primary"; 
       }
     }
-    
+
     function startReview() {
       document.getElementById('selectionPage').classList.add('hidden');
       document.getElementById('reviewPage').classList.remove('hidden');
