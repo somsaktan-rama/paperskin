@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ตรวจบทความแพทย์ประจำบ้าน</title>
@@ -93,6 +94,47 @@
     // ⚠️ ตรงนี้สำคัญมาก: นำลิงก์ Web App ของ Google มาวางในเครื่องหมายคำพูดด้านล่าง
     const API_URL = 'https://script.google.com/macros/s/AKfycbysapu6RGK0ha3E96PpeNdLNhqHZy1lNe9e8CRF2E_iqRNiTyzypTFUi13t8rYWxdg/exec'; 
 
+    let lineData = { uid: null, displayName: null };
+
+// ฟังก์ชันเริ่มต้น LIFF
+async function initializeLiff() {
+  try {
+    // แทนที่ 'YOUR_LIFF_ID' ด้วย ID ที่ได้จาก LINE Developers Console
+    await liff.init({ liffId: "2009675466-B2Ivei1a" }); 
+    if (liff.isLoggedIn()) {
+      const profile = await liff.getProfile();
+      lineData.uid = profile.userId;
+      lineData.displayName = profile.displayName;
+    } else {
+      // ถ้าเปิดผ่านเบราว์เซอร์ปกติและยังไม่ Login ให้ข้ามไปก่อน (จะเก็บข้อมูลไม่ได้)
+      console.log("Not logged in LINE");
+    }
+  } catch (err) {
+    console.error("LIFF Initialization failed", err);
+  }
+}
+
+// เรียกใช้งานเมื่อโหลดหน้าเว็บ
+window.onload = initializeLiff;
+
+// แก้ไขฟังก์ชัน login ให้ส่งค่า LINE ไปด้วย
+async function login() {
+  const mdid = document.getElementById('mdidInput').value;
+  if(!mdid) return alert('กรุณากรอก MDID');
+  
+  showLoading("กำลังเข้าสู่ระบบและเชื่อมต่อ LINE...");
+  
+  // ส่งค่า mdid พร้อมข้อมูล LINE ไปที่ GAS
+  const res = await callAPI({ 
+    action: 'verifyLogin', 
+    mdid: mdid,
+    lineUid: lineData.uid,
+    lineName: lineData.displayName 
+  });
+  
+  hideLoading();
+  // ... (ส่วนที่เหลือของฟังก์ชัน login เหมือนเดิม)
+}
     let currentUser = {};
     let currentPapers = [];
     let selectedPaper = {};
