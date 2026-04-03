@@ -27,7 +27,7 @@
     <div class="card p-4 text-center">
       <h4 class="mb-3" style="color: #24292f;">ระบบตรวจบทความ</h4>
       <div id="lineStatus" class="small mb-3 text-muted">กำลังตรวจสอบการเชื่อมต่อ LINE...</div>
-      <input type="password" id="mdidInput" class="form-control mb-3 text-center" placeholder="กรอกเลข ว.">
+      <input type="tel" pattern="[0-9]*" inputmode="numeric" id="mdidInput" class="form-control form-control-lg text-center" placeholder="กรอกเลข ว." maxlength="5">
       <button class="btn btn-success w-100" style="background-color: #2da44e; border: none;" onclick="login()">เข้าสู่ระบบ</button>
     </div>
   </div>
