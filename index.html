@@ -100,7 +100,19 @@
     async function initializeLiff() {
       const statusEl = document.getElementById('lineStatus');
       try {
-        await liff.init({ liffId: MY_LIFF_ID }); 
+        // ดักจับกรณีลืมใส่ LIFF ID
+        if (MY_LIFF_ID === 'YOUR_LIFF_ID' || MY_LIFF_ID.trim() === '') {
+          throw new Error("คุณยังไม่ได้ใส่รหัส LIFF ID ในโค้ดครับ");
+        }
+
+        // ตั้งเวลา Timeout เผื่อ LINE Server ค้าง (ให้รอแค่ 5 วินาทีพอ)
+        const initPromise = liff.init({ liffId: MY_LIFF_ID });
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("การเชื่อมต่อหมดเวลา (Timeout)")), 5000)
+        );
+
+        await Promise.race([initPromise, timeoutPromise]);
+        
         if (liff.isLoggedIn()) {
           const profile = await liff.getProfile();
           lineData.uid = profile.userId;
@@ -108,12 +120,14 @@
           statusEl.innerText = "✅ เชื่อมต่อ LINE: " + lineData.displayName;
           statusEl.className = "small mb-3 text-success fw-bold";
         } else {
-          statusEl.innerText = "⚠️ ไม่ได้เปิดผ่าน LINE App (จะไม่เก็บข้อมูล)";
+          statusEl.innerText = "⚠️ ไม่ได้เปิดผ่าน LINE App (ใช้วิธีเก็บแบบ Browser แทน)";
           statusEl.className = "small mb-3 text-warning fw-bold";
         }
       } catch (err) {
-        statusEl.innerText = "❌ เชื่อมต่อ LINE ไม่สำเร็จ";
+        // โชว์ข้อความ Error ให้เห็นชัดๆ บนหน้าจอเลย
+        statusEl.innerText = "❌ LINE Error: " + err.message;
         statusEl.className = "small mb-3 text-danger fw-bold";
+        console.error("LIFF Error Details:", err);
       }
     }
 
