@@ -262,16 +262,25 @@
 
     function cancelReview() { document.getElementById('reviewPage').classList.add('hidden'); document.getElementById('selectionPage').classList.remove('hidden'); }
 
-    // 🟢 ฟังก์ชันใหม่: ดึง IP และตรวจสอบประเภทเบราว์เซอร์
+// 🟢 ฟังก์ชันดึง IP และตรวจสอบประเภทเบราว์เซอร์ (เวอร์ชันอัปเกรด ทะลวงบล็อก Firefox)
     async function getClientDetails() {
       let ip = "Unknown IP";
+      
       try {
-        // ใช้ API ฟรีในการดึง IP Address (ไม่ต้องมีคีย์)
+        // ความพยายามที่ 1: ดึงจาก ipify (แหล่งมาตรฐาน)
         const response = await fetch('https://api.ipify.org?format=json');
+        if (!response.ok) throw new Error("Blocked by browser");
         const data = await response.json();
         ip = data.ip;
       } catch (err) {
-        console.error("ไม่สามารถดึง IP ได้");
+        // ความพยายามที่ 2: ถ้าแหล่งแรกโดนบล็อก ให้ใช้ API สำรองที่ 2 (seeip.org)
+        try {
+          const fallbackResponse = await fetch('https://api.seeip.org/jsonip');
+          const fallbackData = await fallbackResponse.json();
+          ip = fallbackData.ip;
+        } catch (err2) {
+          console.error("ถูกระบบความปลอดภัยของเบราว์เซอร์บล็อกการดึง IP");
+        }
       }
 
       const ua = navigator.userAgent;
