@@ -309,8 +309,8 @@
   // 🟢 ระบบทำงานของแป้น Numpad
     function addNumber(num) {
       const input = document.getElementById('mdidInput');
-      // จำกัดให้กรอกได้ไม่เกิน 10 หลัก (ปรับเลข 10 ได้ตามต้องการ)
-      if (input.value.length < 10) { 
+      // จำกัดให้กรอกได้ไม่เกิน 5 หลัก (ปรับเลข 10 ได้ตามต้องการ)
+      if (input.value.length < 5) { 
         input.value += num;
       }
     }
