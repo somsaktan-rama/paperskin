@@ -27,7 +27,7 @@
     <div class="card p-4 text-center">
       <h4 class="mb-3" style="color: #24292f;">ระบบตรวจบทความ</h4>
       <div id="lineStatus" class="small mb-3 text-muted">กำลังตรวจสอบการเชื่อมต่อ LINE...</div>
-      <input type="tel" pattern="[0-9]*" inputmode="numeric" id="mdidInput" class="form-control form-control-lg text-center" placeholder="กรอกเลข ว." maxlength="5">
+      <input type="password" id="mdidInput" class="form-control mb-3 text-center" placeholder="กรอกเลข ว."D">
       <button class="btn btn-success w-100" style="background-color: #2da44e; border: none;" onclick="login()">เข้าสู่ระบบ</button>
     </div>
   </div>
@@ -35,7 +35,7 @@
   <div id="selectionPage" class="container hidden" style="max-width: 600px;">
     <div class="card p-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">เลือกบทความเพื่อตรวจ</h5>
+        <h5 class="mb-0">เลือกบทความ</h5>
         <button class="btn btn-sm btn-outline-danger" onclick="logout()">ออกจากระบบ</button>
       </div>
       <p id="userInfo" class="text-muted small"></p>
@@ -58,7 +58,6 @@
         <div class="mb-1"><strong>Link:</strong> <a href="#" id="lblLink" target="_blank">คลิกดูเอกสาร</a></div>
         <div><strong>จำนวน PASS:</strong> <span id="lblPassCount" class="badge bg-success"></span></div>
       </div>
-
       <button id="btnStartReview" class="btn btn-primary w-100 hidden" onclick="startReview()">เริ่มประเมิน</button>
     </div>
   </div>
@@ -67,17 +66,14 @@
     <div class="card p-4">
       <h5 class="mb-3 text-primary">ลงผลการตรวจ</h5>
       <h6 id="reviewTitle" class="mb-4 text-dark fw-bold"></h6>
-      
       <label class="fw-bold mb-1">ผลการตรวจ (Result):</label>
       <select id="resultSelect" class="form-select mb-3" onchange="checkNoteRequired()">
         <option value="">-- เลือกผล --</option>
         <option value="PASS">PASS</option>
         <option value="FAIL">FAIL</option>
       </select>
-
       <label class="fw-bold mb-1">ข้อเสนอแนะ (Note):</label> <span id="noteStar" class="text-danger hidden">*</span>
       <textarea id="noteInput" class="form-control mb-4" rows="3" placeholder="ระบุเหตุผล (บังคับกรอกหาก FAIL)"></textarea>
-
       <div class="d-flex gap-2">
         <button class="btn btn-secondary w-50" onclick="cancelReview()">ยกเลิก / กลับ</button>
         <button id="btnSubmit" class="btn btn-success w-50" onclick="submitReview()">ยืนยันผล</button>
@@ -86,10 +82,10 @@
   </div>
 
   <script>
-    // ⚠️ 1. ใส่ URL ของ Google Apps Script ที่ลงท้ายด้วย /exec
+    // ⚠️ 1. ใส่ URL API ของ Google Apps Script ที่ลงท้ายด้วย /exec
     const API_URL = 'https://script.google.com/macros/s/AKfycbxOz9i0x2Qzfc036Gb5r2Tk02TOaAEnxlCp9nP7Lj7nK9HSqa9jOC9E68hIugcLQWk/exec'; 
     
-    // ⚠️ 2. ใส่ LIFF ID ที่ได้จาก LINE Developers Console
+    // ⚠️ 2. ใส่ LIFF ID (เช่น '1234567890-abcdefgh')
     const MY_LIFF_ID = '2009675466-B2Ivei1a'; 
 
     let currentUser = {};
@@ -100,17 +96,11 @@
     async function initializeLiff() {
       const statusEl = document.getElementById('lineStatus');
       try {
-        // ดักจับกรณีลืมใส่ LIFF ID
         if (MY_LIFF_ID === 'YOUR_LIFF_ID' || MY_LIFF_ID.trim() === '') {
-          throw new Error("คุณยังไม่ได้ใส่รหัส LIFF ID ในโค้ดครับ");
+          throw new Error("คุณยังไม่ได้ใส่รหัส LIFF ID ในโค้ด");
         }
-
-        // ตั้งเวลา Timeout เผื่อ LINE Server ค้าง (ให้รอแค่ 5 วินาทีพอ)
         const initPromise = liff.init({ liffId: MY_LIFF_ID });
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("การเชื่อมต่อหมดเวลา (Timeout)")), 5000)
-        );
-
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("การเชื่อมต่อ LINE หมดเวลา")), 5000));
         await Promise.race([initPromise, timeoutPromise]);
         
         if (liff.isLoggedIn()) {
@@ -120,43 +110,71 @@
           statusEl.innerText = "✅ เชื่อมต่อ LINE: " + lineData.displayName;
           statusEl.className = "small mb-3 text-success fw-bold";
         } else {
-          statusEl.innerText = "⚠️ ไม่ได้เปิดผ่าน LINE App (ใช้วิธีเก็บแบบ Browser แทน)";
+          statusEl.innerText = "⚠️ ไม่ได้เปิดผ่าน LINE App (ใช้วิธีเก็บ Log ผ่าน Browser แทน)";
           statusEl.className = "small mb-3 text-warning fw-bold";
         }
       } catch (err) {
-        // โชว์ข้อความ Error ให้เห็นชัดๆ บนหน้าจอเลย
         statusEl.innerText = "❌ LINE Error: " + err.message;
         statusEl.className = "small mb-3 text-danger fw-bold";
-        console.error("LIFF Error Details:", err);
+        console.error(err);
       }
     }
 
     window.onload = initializeLiff;
 
-    function showLoading(text) {
-      document.getElementById('loadingText').innerText = text || "กำลังประมวลผล...";
-      document.getElementById('loadingOverlay').classList.remove('hidden');
-    }
-    
-    function hideLoading() {
-      document.getElementById('loadingOverlay').classList.add('hidden');
-    }
+    function showLoading(text) { document.getElementById('loadingText').innerText = text || "กำลังประมวลผล..."; document.getElementById('loadingOverlay').classList.remove('hidden'); }
+    function hideLoading() { document.getElementById('loadingOverlay').classList.add('hidden'); }
 
     async function callAPI(payload) {
       try {
-        const response = await fetch(API_URL, {
-          method: 'POST', redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
+        const response = await fetch(API_URL, { method: 'POST', redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
         return await response.json();
-      } catch (error) {
-        return null;
+      } catch (error) { return null; }
+    }
+
+    // 🟢 ระบบดึง IP, Device Type, OS, Browser
+    async function getClientDetails() {
+      let ip = "Unknown IP";
+      const apiSources = [ 'https://api.ipify.org?format=json', 'https://ipinfo.io/json', 'https://api.db-ip.com/v2/free/self', 'https://api.seeip.org/jsonip' ];
+      for (let url of apiSources) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000); 
+        try {
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId); 
+          if (!response.ok) continue; 
+          const data = await response.json();
+          if (data.ip) ip = data.ip; else if (data.ipAddress) ip = data.ipAddress;
+          if (ip !== "Unknown IP") break; 
+        } catch (err) { clearTimeout(timeoutId); }
       }
+
+      const ua = navigator.userAgent;
+      let browser = "Unknown Browser";
+      let os = "Unknown OS";
+      let deviceType = "Desktop";
+      
+      if (/Tablet|iPad/i.test(ua) || (ua.includes("Android") && !ua.includes("Mobile"))) { deviceType = "Tablet"; } 
+      else if (/Mobile|iPhone|Android|Windows Phone/i.test(ua)) { deviceType = "Mobile"; }
+
+      if (ua.includes("Win")) os = "Windows";
+      else if (ua.includes("Mac")) { if (navigator.maxTouchPoints > 1) { os = "iPadOS"; deviceType = "Tablet"; } else { os = "macOS"; } }
+      else if (ua.includes("iPhone")) os = "iOS"; else if (ua.includes("iPad")) os = "iPadOS";
+      else if (ua.includes("Android")) os = "Android"; else if (ua.includes("Linux")) os = "Linux";
+
+      if (ua.includes("Line") || ua.includes("LIFF")) browser = "LINE";
+      else if (ua.includes("Firefox")) browser = "Firefox";
+      else if (ua.includes("SamsungBrowser")) browser = "SamsungInternet";
+      else if (ua.includes("Opera") || ua.includes("OPR") || ua.includes("Brave")) browser = "Opera/Brave";
+      else if (ua.includes("Edg")) browser = "Edge"; else if (ua.includes("Chrome")) browser = "Chrome";
+      else if (ua.includes("Safari")) browser = "Safari"; else browser = "Other";
+
+      return { ip, browser, os, deviceType };
     }
 
     async function login() {
       const mdid = document.getElementById('mdidInput').value;
-      if(!mdid) return alert('กรุณากรอก เลข ว.');
+      if(!mdid) return alert('กรุณากรอก MDID');
       
       showLoading("กำลังเข้าสู่ระบบ...");
       const res = await callAPI({ action: 'verifyLogin', mdid: mdid, lineUid: lineData.uid, lineName: lineData.displayName });
@@ -168,47 +186,32 @@
         document.getElementById('userInfo').innerText = `ผู้ใช้งาน: ${displayName} (${res.staffInst})`;
         
         const sheetSelect = document.getElementById('sheetSelect');
-        sheetSelect.innerHTML = '<option value="">-- กรุณาเลือกหมวดหมู่ --</option>';
+        sheetSelect.innerHTML = '<option value="">-- กรุณาเลือก --</option>';
         if(res.displaySheets && res.displaySheets.length > 0) {
           res.displaySheets.forEach(sheetName => {
-            let opt = document.createElement('option');
-            opt.value = sheetName;
-            opt.text = sheetName;
-            sheetSelect.appendChild(opt);
+            let opt = document.createElement('option'); opt.value = sheetName; opt.text = sheetName; sheetSelect.appendChild(opt);
           });
         }
-        document.getElementById('loginPage').classList.add('hidden');
-        document.getElementById('selectionPage').classList.remove('hidden');
-      } else {
-        alert(res ? res.message : "เชื่อมต่อ API ไม่สำเร็จ");
-      }
+        document.getElementById('loginPage').classList.add('hidden'); document.getElementById('selectionPage').classList.remove('hidden');
+      } else { alert(res ? res.message : "เชื่อมต่อ API ไม่สำเร็จ"); }
     }
 
     async function loadPapers() {
       const sheet = document.getElementById('sheetSelect').value;
       const paperDropdown = document.getElementById('paperSelect');
-      document.getElementById('paperDetails').classList.add('hidden');
-      document.getElementById('btnStartReview').classList.add('hidden');
-      
-      if(!sheet) {
-        paperDropdown.innerHTML = '<option value="">-- กรุณาเลือกหมวดหมู่ก่อน --</option>';
-        return;
-      }
+      document.getElementById('paperDetails').classList.add('hidden'); document.getElementById('btnStartReview').classList.add('hidden');
+      if(!sheet) { paperDropdown.innerHTML = '<option value="">-- กรุณาเลือกหมวดหมู่ก่อน --</option>'; return; }
 
-      showLoading("กำลังดึงข้อมูลบทความ...");
+      showLoading("กำลังดึงข้อมูล...");
       const res = await callAPI({ action: 'getPapers', sheetName: sheet, reviewerInst: currentUser.staffInst, reviewerName: currentUser.staffName });
       hideLoading();
       
       if(res && res.success) {
-        currentPapers = res.data;
-        paperDropdown.innerHTML = '<option value="">-- เลือกบทความ --</option>';
-        
-        if(currentPapers.length === 0) {
-           paperDropdown.innerHTML = '<option value="">-- ไม่มีบทความในระบบ --</option>';
-        } else {
+        currentPapers = res.data; paperDropdown.innerHTML = '<option value="">-- เลือกบทความ --</option>';
+        if(currentPapers.length === 0) { paperDropdown.innerHTML = '<option value="">-- ไม่มีบทความ --</option>'; } 
+        else {
            currentPapers.forEach((p, index) => {
-             let opt = document.createElement('option');
-             opt.value = index; 
+             let opt = document.createElement('option'); opt.value = index; 
              let displayTitle = p.title ? p.title : "(ยังไม่ได้ส่งชื่อเรื่อง)";
              let baseText = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - ${displayTitle}`;
              
@@ -237,133 +240,53 @@
       const index = document.getElementById('paperSelect').value;
       const detailsDiv = document.getElementById('paperDetails');
       const btnStart = document.getElementById('btnStartReview');
-      
       if(index === "") { detailsDiv.classList.add('hidden'); btnStart.classList.add('hidden'); return; }
 
       selectedPaper = currentPapers[index];
       document.getElementById('lblPublish').innerText = selectedPaper.publish || "-";
-      
       const linkEl = document.getElementById('lblLink');
-      let paperUrl = selectedPaper.link;
-      if (paperUrl) {
-        if (!paperUrl.startsWith('http')) { paperUrl = 'https://' + paperUrl; }
+      if (selectedPaper.link) {
+        let paperUrl = selectedPaper.link.startsWith('http') ? selectedPaper.link : 'https://' + selectedPaper.link;
         linkEl.href = paperUrl; linkEl.innerText = "คลิกดูเอกสาร"; linkEl.style.pointerEvents = "auto"; linkEl.className = "";
-      } else {
-        linkEl.href = "#"; linkEl.innerText = "ไม่มีลิงก์เอกสาร"; linkEl.style.pointerEvents = "none"; linkEl.className = "text-muted";
-      }
+      } else { linkEl.href = "#"; linkEl.innerText = "ไม่มีลิงก์"; linkEl.style.pointerEvents = "none"; linkEl.className = "text-muted"; }
       
       document.getElementById('lblPassCount').innerText = selectedPaper.passCount + " คน";
       detailsDiv.classList.remove('hidden'); btnStart.classList.remove('hidden');
 
-      if (currentUser.isStudent) {
-        btnStart.disabled = true; btnStart.innerText = "ดูรายละเอียดได้อย่างเดียว"; btnStart.className = "btn w-100 btn-secondary"; 
-      } else {
-        btnStart.disabled = false; btnStart.innerText = "เริ่มประเมิน"; btnStart.className = "btn w-100 btn-primary"; 
-      }
+      if (currentUser.isStudent) { btnStart.disabled = true; btnStart.innerText = "ดูได้อย่างเดียว"; btnStart.className = "btn w-100 btn-secondary"; } 
+      else { btnStart.disabled = false; btnStart.innerText = "เริ่มประเมิน"; btnStart.className = "btn w-100 btn-primary"; }
     }
 
     function startReview() {
-      document.getElementById('selectionPage').classList.add('hidden');
-      document.getElementById('reviewPage').classList.remove('hidden');
+      document.getElementById('selectionPage').classList.add('hidden'); document.getElementById('reviewPage').classList.remove('hidden');
       document.getElementById('reviewTitle').innerText = selectedPaper.title;
       document.getElementById('resultSelect').value = ""; document.getElementById('noteInput').value = ""; checkNoteRequired();
     }
 
-    function checkNoteRequired() {
-      const isFail = document.getElementById('resultSelect').value === 'FAIL';
-      document.getElementById('noteStar').classList.toggle('hidden', !isFail);
-    }
-
+    function checkNoteRequired() { document.getElementById('noteStar').classList.toggle('hidden', document.getElementById('resultSelect').value !== 'FAIL'); }
     function cancelReview() { document.getElementById('reviewPage').classList.add('hidden'); document.getElementById('selectionPage').classList.remove('hidden'); }
 
-// 🟢 ฟังก์ชันดึง IP และตรวจสอบประเภทเบราว์เซอร์ (เวอร์ชันอัปเกรด ทะลวงบล็อก Firefox)
-// 🟢 ฟังก์ชันดึง IP พร้อมระบบ Fallback API 4 แหล่ง และ Timeout 3 วินาที
-// 🟢 อัปเดตเพิ่มระบบตรวจจับ OS (ระบบปฏิบัติการ)
-const ua = navigator.userAgent;
-      let browser = "Unknown Browser";
-      let os = "Unknown OS";
-      let deviceType = "Desktop"; // ค่าเริ่มต้น
-      
-      // 🟢 1. ตรวจสอบประเภทอุปกรณ์ (Device Type)
-      if (/Tablet|iPad/i.test(ua) || (ua.includes("Android") && !ua.includes("Mobile"))) {
-        deviceType = "Tablet";
-      } else if (/Mobile|iPhone|Android|Windows Phone/i.test(ua)) {
-        deviceType = "Mobile";
-      }
-
-      // 🟢 2. ตรวจสอบ OS
-      if (ua.includes("Win")) os = "Windows";
-      else if (ua.includes("Mac")) {
-        // อัปเดตแก้บั๊ก iPad รุ่นใหม่ที่ชอบปลอมตัวเป็น Mac
-        if (navigator.maxTouchPoints > 1) { os = "iPadOS"; deviceType = "Tablet"; }
-        else { os = "macOS"; }
-      }
-      else if (ua.includes("iPhone")) os = "iOS";
-      else if (ua.includes("iPad")) os = "iPadOS";
-      else if (ua.includes("Android")) os = "Android";
-      else if (ua.includes("Linux")) os = "Linux";
-
-      // 🟢 3. ตรวจสอบ Browser
-      if (ua.includes("Line") || ua.includes("LIFF")) browser = "LINE";
-      else if (ua.includes("Firefox")) browser = "Firefox";
-      else if (ua.includes("SamsungBrowser")) browser = "SamsungInternet";
-      else if (ua.includes("Opera") || ua.includes("OPR") || ua.includes("Brave")) browser = "Opera/Brave";
-      else if (ua.includes("Edg")) browser = "Edge";
-      else if (ua.includes("Chrome")) browser = "Chrome";
-      else if (ua.includes("Safari")) browser = "Safari";
-      else browser = "Other";
-
-      // ส่ง deviceType กลับไปพร้อมกับค่าอื่นๆ
-      return { ip, browser, os, deviceType };    
-    
-// 🟢 อัปเดตการส่งข้อมูล Sigup ให้เป็นแบบ Comma-separated
     async function submitReview() {
       const result = document.getElementById('resultSelect').value;
       const note = document.getElementById('noteInput').value;
-      
       if(!result) return alert("กรุณาเลือกผลการตรวจ");
-      if(result === 'FAIL' && !note.trim()) return alert("กรุณาระบุ Note เนื่องจากให้ผลเป็น FAIL");
+      if(result === 'FAIL' && !note.trim()) return alert("กรุณาระบุ Note");
 
-      showLoading("กำลังบันทึกผลและตรวจสอบที่มา...");
-
+      showLoading("กำลังบันทึกและตรวจสอบอุปกรณ์...");
       const client = await getClientDetails();
-      let sigupData = "";
+      let sigupData = lineData.displayName ? `${lineData.displayName},${client.deviceType},${client.os},${client.ip}` : `${client.deviceType},${client.os},${client.browser},${client.ip}`;
 
-      // จัดรูปแบบข้อความตามเงื่อนไข (LINE vs Browser)
-if (lineData.displayName) {
-        // รูปแบบ: ชื่อไลน์,Device,OS,IP
-        sigupData = `${lineData.displayName},${client.deviceType},${client.os},${client.ip}`;
-      } else {
-        // รูปแบบ: Device,OS,Browser,IP
-        sigupData = `${client.deviceType},${client.os},${client.browser},${client.ip}`;
-      }
-
-      const formData = { 
-        sheetName: document.getElementById('sheetSelect').value, 
-        rowNumber: selectedPaper.rowNumber, 
-        staffName: currentUser.staffName, 
-        result: result, 
-        note: note,
-        sigup: sigupData
-      };
-      
+      const formData = { sheetName: document.getElementById('sheetSelect').value, rowNumber: selectedPaper.rowNumber, staffName: currentUser.staffName, result: result, note: note, sigup: sigupData };
       const res = await callAPI({ action: 'submitReview', formData: formData });
       hideLoading();
 
-      if(res && res.success) { 
-        alert("บันทึกผลสำเร็จ!"); 
-        loadPapers(); 
-        cancelReview(); 
-      } 
-      else { alert("บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง"); }
+      if(res && res.success) { alert("บันทึกผลสำเร็จ!"); loadPapers(); cancelReview(); } else { alert("บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง"); }
     }
 
-    
     function logout() {
       document.getElementById('selectionPage').classList.add('hidden'); document.getElementById('loginPage').classList.remove('hidden');
       document.getElementById('mdidInput').value = ""; document.getElementById('sheetSelect').value = ""; document.getElementById('paperSelect').innerHTML = '<option value="">-- รอการดึงข้อมูล --</option>';
-      document.getElementById('paperDetails').classList.add('hidden'); document.getElementById('btnStartReview').classList.add('hidden');
-      currentUser = {};
+      document.getElementById('paperDetails').classList.add('hidden'); document.getElementById('btnStartReview').classList.add('hidden'); currentUser = {};
     }
   </script>
 </body>
