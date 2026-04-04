@@ -253,7 +253,7 @@
       }
     }
 
-    function showPaperDetails() {
+function showPaperDetails() {
       const index = document.getElementById('paperSelect').value;
       const detailsDiv = document.getElementById('paperDetails');
       const btnStart = document.getElementById('btnStartReview');
@@ -270,9 +270,29 @@
       document.getElementById('lblPassCount').innerText = selectedPaper.passCount + " คน";
       detailsDiv.classList.remove('hidden'); btnStart.classList.remove('hidden');
 
-      if (currentUser.isStudent) { btnStart.disabled = true; btnStart.innerText = "ดูได้อย่างเดียว"; btnStart.className = "btn w-100 btn-secondary"; } 
-      else { btnStart.disabled = false; btnStart.innerText = "เริ่มประเมิน"; btnStart.className = "btn w-100 btn-primary"; }
+      // 🟢 แบ่งสิทธิ์การใช้งานปุ่มประเมิน
+      if (currentUser.isStudent) { 
+        // 1. ถ้านักเรียน (Y1-Y4)
+        btnStart.disabled = true; 
+        btnStart.innerText = "ดูรายละเอียดได้อย่างเดียว"; 
+        btnStart.className = "btn w-100 btn-secondary"; 
+      } 
+      else { 
+        // 2. ถ้าเป็นอาจารย์ (S)
+        if (!lineData.uid) {
+          // 2.1 เข้าผ่าน Desktop / Browser ทั่วไป
+          btnStart.disabled = true; 
+          btnStart.innerText = "⚠️ ต้องประเมินผ่านแอป LINE ในมือถือเท่านั้น"; 
+          btnStart.className = "btn w-100 btn-warning text-dark fw-bold"; 
+        } else {
+          // 2.2 เข้าผ่านแอป LINE
+          btnStart.disabled = false; 
+          btnStart.innerText = "เริ่มประเมิน"; 
+          btnStart.className = "btn w-100 btn-primary fw-bold"; 
+        }
+      }
     }
+    
 
     function startReview() {
       document.getElementById('selectionPage').classList.add('hidden'); document.getElementById('reviewPage').classList.remove('hidden');
