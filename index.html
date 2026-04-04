@@ -264,9 +264,9 @@
 
 // 🟢 ฟังก์ชันดึง IP และตรวจสอบประเภทเบราว์เซอร์ (เวอร์ชันอัปเกรด ทะลวงบล็อก Firefox)
 // 🟢 ฟังก์ชันดึง IP พร้อมระบบ Fallback API 4 แหล่ง และ Timeout 3 วินาที
+// 🟢 อัปเดตเพิ่มระบบตรวจจับ OS (ระบบปฏิบัติการ)
     async function getClientDetails() {
       let ip = "Unknown IP";
-      
       const apiSources = [
         'https://api.ipify.org?format=json',
         'https://ipinfo.io/json',
@@ -275,48 +275,47 @@
       ];
 
       for (let url of apiSources) {
-        // สร้างตัวควบคุมเวลาและตั้งเวลาไว้ที่ 3000 มิลลิวินาที (3 วินาที)
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000); 
-
         try {
-          // ส่ง controller.signal ไปพร้อมกับคำสั่ง fetch
           const response = await fetch(url, { signal: controller.signal });
-          
-          // ทันทีที่โหลดเสร็จ ให้ยกเลิกการนับเวลาถอยหลัง
           clearTimeout(timeoutId); 
-
           if (!response.ok) continue; 
-          
           const data = await response.json();
-          
           if (data.ip) ip = data.ip;
           else if (data.ipAddress) ip = data.ipAddress;
-
           if (ip !== "Unknown IP") break; 
         } catch (err) {
-          // ถ้าถูกบล็อก (AdBlock) หรือหมดเวลา 3 วินาที (AbortError) จะข้ามมาทำงานบรรทัดนี้
-          clearTimeout(timeoutId); // ล้างเวลาทิ้งกันเหนียว
-          console.warn(`ข้าม API: ${url} (ถูกบล็อก หรือ ใช้เวลาเกิน 3 วินาที)`);
+          clearTimeout(timeoutId); 
         }
       }
 
       const ua = navigator.userAgent;
       let browser = "Unknown Browser";
+      let os = "Unknown OS";
       
-      if (ua.includes("Line") || ua.includes("LIFF")) browser = "LINE In-App Browser";
+      // ตรวจสอบ OS
+      if (ua.includes("Win")) os = "Windows";
+      else if (ua.includes("Mac")) os = "macOS";
+      else if (ua.includes("iPhone")) os = "iOS";
+      else if (ua.includes("iPad")) os = "iPadOS";
+      else if (ua.includes("Android")) os = "Android";
+      else if (ua.includes("Linux")) os = "Linux";
+
+      // ตรวจสอบ Browser
+      if (ua.includes("Line") || ua.includes("LIFF")) browser = "LINE";
       else if (ua.includes("Firefox")) browser = "Firefox";
-      else if (ua.includes("SamsungBrowser")) browser = "Samsung Internet";
+      else if (ua.includes("SamsungBrowser")) browser = "SamsungInternet";
       else if (ua.includes("Opera") || ua.includes("OPR") || ua.includes("Brave")) browser = "Opera/Brave";
       else if (ua.includes("Edg")) browser = "Edge";
       else if (ua.includes("Chrome")) browser = "Chrome";
       else if (ua.includes("Safari")) browser = "Safari";
       else browser = "Other";
 
-      return { ip, browser };
-    }    
-
+      return { ip, browser, os };
+    }
     
+// 🟢 อัปเดตการส่งข้อมูล Sigup ให้เป็นแบบ Comma-separated
     async function submitReview() {
       const result = document.getElementById('resultSelect').value;
       const note = document.getElementById('noteInput').value;
@@ -326,15 +325,16 @@
 
       showLoading("กำลังบันทึกผลและตรวจสอบที่มา...");
 
-      // 🟢 เรียกใช้ฟังก์ชันดึง IP และ Browser
       const client = await getClientDetails();
       let sigupData = "";
 
-      // จัดรูปแบบข้อความตามเงื่อนไข
+      // จัดรูปแบบข้อความตามเงื่อนไข (LINE vs Browser)
       if (lineData.displayName) {
-        sigupData = `LINE: ${lineData.displayName} (IP: ${client.ip})`;
+        // รูปแบบ: line_display,IP
+        sigupData = `${lineData.displayName},${client.ip}`;
       } else {
-        sigupData = `Browser: ${client.browser} (IP: ${client.ip})`;
+        // รูปแบบ: OS,browser,IP
+        sigupData = `${client.os},${client.browser},${client.ip}`;
       }
 
       const formData = { 
@@ -343,7 +343,7 @@
         staffName: currentUser.staffName, 
         result: result, 
         note: note,
-        sigup: sigupData // 🟢 ส่งข้อมูล Sigup ไปให้ Google Script
+        sigup: sigupData
       };
       
       const res = await callAPI({ action: 'submitReview', formData: formData });
@@ -357,7 +357,7 @@
       else { alert("บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง"); }
     }
 
-
+    
     function logout() {
       document.getElementById('selectionPage').classList.add('hidden'); document.getElementById('loginPage').classList.remove('hidden');
       document.getElementById('mdidInput').value = ""; document.getElementById('sheetSelect').value = ""; document.getElementById('paperSelect').innerHTML = '<option value="">-- รอการดึงข้อมูล --</option>';
