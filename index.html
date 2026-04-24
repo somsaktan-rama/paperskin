@@ -75,8 +75,18 @@
       <div id="paperDetails" class="hidden p-3 mb-3" style="background: #ddf4ff; border-radius: 6px; border: 1px solid #b6e3ff;">
         <div class="mb-1"><strong>Publish:</strong> <span id="lblPublish"></span></div>
         <div class="mb-1"><strong>Link:</strong> <a href="#" id="lblLink" target="_blank">คลิกดูเอกสาร</a></div>
-        <div><strong>จำนวน PASS:</strong> <span id="lblPassCount" class="badge bg-success"></span></div>
+        <div class="mb-2">
+          <strong>ผลประเมิน:</strong> 
+          <span id="lblPassCount" class="badge bg-success"></span> 
+          <span id="lblFailCount" class="badge bg-danger"></span>
+        </div>
+        <div id="noteContainer" class="mt-2 pt-2 border-top">
+          <small class="fw-bold d-block mb-1 text-primary">ข้อเสนอแนะจากผู้ตรวจ:</small>
+          <div id="noteList" class="small text-muted" style="max-height: 150px; overflow-y: auto;"></div>
+        </div>
       </div>
+
+      
       <button id="btnStartReview" class="btn btn-primary w-100 hidden" onclick="startReview()">เริ่มประเมิน</button>
     </div>
   </div>
@@ -268,14 +278,26 @@ function showPaperDetails() {
 
       selectedPaper = currentPapers[index];
       document.getElementById('lblPublish').innerText = selectedPaper.publish || "-";
-      const linkEl = document.getElementById('lblLink');
-      if (selectedPaper.link) {
-        let paperUrl = selectedPaper.link.startsWith('http') ? selectedPaper.link : 'https://' + selectedPaper.link;
-        linkEl.href = paperUrl; linkEl.innerText = "คลิกดูเอกสาร"; linkEl.style.pointerEvents = "auto"; linkEl.className = "";
-      } else { linkEl.href = "#"; linkEl.innerText = "ไม่มีลิงก์"; linkEl.style.pointerEvents = "none"; linkEl.className = "text-muted"; }
       
-      document.getElementById('lblPassCount').innerText = selectedPaper.passCount + " คน";
-      detailsDiv.classList.remove('hidden'); btnStart.classList.remove('hidden');
+      // แสดงจำนวน PASS และ FAIL
+      document.getElementById('lblPassCount').innerText = "PASS: " + selectedPaper.passCount;
+      document.getElementById('lblFailCount').innerText = "FAIL: " + selectedPaper.failCount;
+
+      // แสดงรายการ Note
+      const noteList = document.getElementById('noteList');
+      noteList.innerHTML = "";
+      if (selectedPaper.notes && selectedPaper.notes.length > 0) {
+        selectedPaper.notes.forEach(note => {
+          if (note.trim() !== "") {
+            let div = document.createElement('div');
+            div.className = "mb-1 border-bottom pb-1";
+            div.innerText = "• " + note;
+            noteList.appendChild(div);
+          }
+        });
+      } else {
+        noteList.innerHTML = "<em>ยังไม่มีข้อเสนอแนะ</em>";
+      }
 
       // 🟢 แบ่งสิทธิ์การใช้งานปุ่มประเมิน
       if (currentUser.isStudent) { 
