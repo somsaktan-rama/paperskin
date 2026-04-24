@@ -247,7 +247,7 @@ async function login() {
            currentPapers.forEach((p, index) => {
              let opt = document.createElement('option'); opt.value = index; 
              let displayTitle = p.title ? p.title : "(ยังไม่ได้ส่งชื่อเรื่อง)";
-             let baseText = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - ${displayTitle}`;
+             let baseText = `[${p.institute}] ${p.name} (P:${p.passCount}/F:${p.failCount}) - ${displayTitle}`;
              
              if (currentUser.isStudent) {
                if (!p.title || p.title === "") { opt.text = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - (ยังไม่ได้ส่งชื่อเรื่อง)`; opt.disabled = true; opt.style.color = "#ff6b6b"; }
