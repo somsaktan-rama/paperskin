@@ -151,7 +151,7 @@
       input.value = input.value.slice(0, -1);
     }
 
-// 🟢 เชื่อมต่อ LINE LIFF (อัปเดตอุดช่องโหว่ PC)
+// 🟢 เชื่อมต่อ LINE LIFF (รองรับระบบยืนยันตัวตนบน PC)
     async function initializeLiff() {
       const statusEl = document.getElementById('lineStatus');
       try {
@@ -163,30 +163,26 @@
         await Promise.race([initPromise, timeoutPromise]);
         
         if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile();
+          lineData.uid = profile.userId;
+          lineData.displayName = profile.displayName;
           
-          // 🟢 เพิ่มการตรวจสอบว่าเปิด "ข้างใน" แอป LINE บนมือถือจริงๆ ใช่หรือไม่
           if (liff.isInClient()) {
-            const profile = await liff.getProfile();
-            lineData.uid = profile.userId;
-            lineData.displayName = profile.displayName;
-            statusEl.innerText = "✅ เชื่อมต่อ LINE: " + lineData.displayName;
-            statusEl.className = "small mb-3 text-success fw-bold";
+            statusEl.innerText = "✅ ยืนยันตัวตนผ่านแอป LINE: " + lineData.displayName;
           } else {
-            // ถ้าเป็น true แปลว่าล็อกอิน LINE ผ่าน PC ให้จับเข้าโหมด Desktop
-            statusEl.innerText = "🖥️ เปิดผ่าน PC (ใช้งานโหมดอ่านเท่านั้น)";
-            statusEl.className = "small mb-3 text-warning text-dark fw-bold";
-            // ⚠️ ปล่อยให้ lineData.uid เป็น null ระบบจะล็อกปุ่มประเมินอัตโนมัติ
+            statusEl.innerText = "✅ ยืนยันตัวตนผ่าน PC: " + lineData.displayName;
           }
-
+          statusEl.className = "small mb-3 text-success fw-bold";
         } else {
-          statusEl.innerText = "⚠️ ไม่ได้เปิดผ่าน LINE App";
-          statusEl.className = "small mb-3 text-warning text-dark fw-bold";
+          // 🟢 กรณีเข้าผ่าน PC แล้วยังไม่ได้ล็อกอิน ให้สร้างปุ่มกดเพื่อเปิดหน้าสแกน QR Code
+          statusEl.innerHTML = `⚠️ กรุณายืนยันตัวตนเพื่อสิทธิ์ในการประเมิน<br><button class="btn btn-sm btn-success mt-2 px-4 rounded-pill fw-bold" onclick="liff.login()">คลิกล็อกอินด้วย LINE</button>`;
+          statusEl.className = "small mb-3 text-dark fw-bold";
         }
       } catch (err) {
         statusEl.innerText = "❌ LINE Error: " + err.message;
         statusEl.className = "small mb-3 text-danger fw-bold";
       }
-    }
+    }    
     
     window.onload = initializeLiff;
 
@@ -309,7 +305,7 @@
       }
     }
 
-    function showPaperDetails() {
+function showPaperDetails() {
       const index = document.getElementById('paperSelect').value;
       const detailsDiv = document.getElementById('paperDetails');
       const btnStart = document.getElementById('btnStartReview');
@@ -335,10 +331,15 @@
           btnStart.disabled = true; btnStart.innerText = "ดูรายละเอียดได้อย่างเดียว"; btnStart.className = "btn w-100 btn-secondary"; 
         }
       } else { 
+        // 🟢 โหมดอาจารย์ (S): เช็คว่าทำการล็อกอิน LINE (ยืนยันตัวตน) หรือยัง
         if (!lineData.uid) {
-          btnStart.disabled = true; btnStart.innerText = "⚠️ ต้องประเมินผ่านแอป LINE"; btnStart.className = "btn w-100 btn-warning text-dark fw-bold"; 
+          btnStart.disabled = true; 
+          btnStart.innerText = "⚠️ ต้องล็อกอิน LINE ก่อนเพื่อประเมิน"; 
+          btnStart.className = "btn w-100 btn-warning text-dark fw-bold"; 
         } else {
-          btnStart.disabled = false; btnStart.innerText = "เริ่มประเมิน"; btnStart.className = "btn w-100 btn-primary fw-bold fs-5"; 
+          btnStart.disabled = false; 
+          btnStart.innerText = "เริ่มประเมิน"; 
+          btnStart.className = "btn w-100 btn-primary fw-bold fs-5"; 
         }
       }
     }
