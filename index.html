@@ -240,26 +240,38 @@ async function login() {
       const res = await callAPI({ action: 'getPapers', sheetName: sheet, reviewerInst: currentUser.staffInst, reviewerName: currentUser.staffName });
       hideLoading();
       
-      if(res && res.success) {
-        currentPapers = res.data; paperDropdown.innerHTML = '<option value="">-- เลือกบทความ --</option>';
-        if(currentPapers.length === 0) { paperDropdown.innerHTML = '<option value="">-- ไม่มีบทความ --</option>'; } 
-        else {
+if(res && res.success) {
+        currentPapers = res.data;
+        paperDropdown.innerHTML = '<option value="">-- เลือกบทความ --</option>';
+        
+        if(currentPapers.length === 0) {
+           paperDropdown.innerHTML = '<option value="">-- ไม่มีบทความ --</option>';
+        } else {
            currentPapers.forEach((p, index) => {
-             let opt = document.createElement('option'); opt.value = index; 
-             let displayTitle = p.title ? p.title : "(ยังไม่ได้ส่งชื่อเรื่อง)";
-             let baseText = `[${p.institute}] ${p.name} (P:${p.passCount}/F:${p.failCount}) - ${displayTitle}`;
+             let opt = document.createElement('option');
+             opt.value = index; 
              
-             if (currentUser.isStudent) {
-               if (!p.title || p.title === "") { opt.text = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - (ยังไม่ได้ส่งชื่อเรื่อง)`; opt.disabled = true; opt.style.color = "#ff6b6b"; }
-               else if (!p.link || p.link === "") { opt.text = `${baseText} (ยังไม่ส่งเอกสาร)`; opt.disabled = true; opt.style.color = "#74b9ff"; }
-               else { opt.text = baseText; opt.style.color = "#24292f"; }
+             let displayTitle = p.title ? p.title : "(ยังไม่ได้ส่งชื่อเรื่อง)";
+             // 🟢 แสดงผล (P:0/F:0) ในรายชื่อ
+             let stats = `(P:${p.passCount}/F:${p.failCount})`;
+             let baseText = `[${p.institute}] ${p.name} ${stats} - ${displayTitle}`;
+             
+             // 🟢 ถ้าเป็นบทความของตัวเอง ให้ใส่ดาวและไม่ Disable (เพื่อให้อ่าน Note ได้เสมอ)
+             if (p.isOwner) {
+               opt.text = "⭐ [ของฉัน] " + baseText;
+               opt.style.fontWeight = "bold";
+               opt.style.color = "#0969da";
+             } else if (currentUser.isStudent) {
+               // นักเรียนคนอื่น ดูได้แต่ห้ามประเมิน (เงื่อนไขเดิม)
+               if (!p.title || p.title === "") { opt.text = baseText + " (ยังไม่ส่งชื่อ)"; opt.disabled = true; }
+               else if (!p.link || p.link === "") { opt.text = baseText + " (ยังไม่ส่งไฟล์)"; opt.disabled = true; }
+               else { opt.text = baseText; }
              } else {
-               if (p.isOwnInst) { opt.text = `${baseText} (สถาบันตนเอง)`; opt.disabled = true; opt.style.color = "#a0a0a0"; }
-               else if (p.isReviewed) { opt.text = `${baseText} (เคยตรวจแล้ว)`; opt.disabled = true; opt.style.color = "#a0a0a0"; }
-               else if (p.passCount >= 3) { opt.text = `${baseText} (PASS ครบ 3 แล้ว)`; opt.disabled = true; opt.style.color = "#2da44e"; }
-               else if (!p.title || p.title === "") { opt.text = `[${p.institute}] ${p.name} (PASS: ${p.passCount}) - (ยังไม่ได้ส่งชื่อเรื่อง)`; opt.disabled = true; opt.style.color = "#ff6b6b"; }
-               else if (!p.link || p.link === "") { opt.text = `${baseText} (ยังไม่ส่งเอกสาร)`; opt.disabled = true; opt.style.color = "#74b9ff"; }
-               else { opt.text = baseText; opt.style.color = "#24292f"; }
+               // อาจารย์ (เงื่อนไขเดิม)
+               if (p.isOwnInst) { opt.text = baseText + " (สถาบันตนเอง)"; opt.disabled = true; opt.style.color = "#a0a0a0"; }
+               else if (p.isReviewed) { opt.text = baseText + " (เคยตรวจแล้ว)"; opt.disabled = true; opt.style.color = "#a0a0a0"; }
+               else if (p.passCount >= 3) { opt.text = baseText + " (ครบ 3 PASS)"; opt.disabled = true; opt.style.color = "#2da44e"; }
+               else { opt.text = baseText; }
              }
              paperDropdown.appendChild(opt);
            });
@@ -279,26 +291,39 @@ function showPaperDetails() {
       selectedPaper = currentPapers[index];
       document.getElementById('lblPublish').innerText = selectedPaper.publish || "-";
       
-      // แสดงจำนวน PASS และ FAIL
+// 🟢 แสดงจำนวน PASS/FAIL แบบแยกสี
       document.getElementById('lblPassCount').innerText = "PASS: " + selectedPaper.passCount;
       document.getElementById('lblFailCount').innerText = "FAIL: " + selectedPaper.failCount;
 
-      // แสดงรายการ Note
+      // 🟢 แสดงรายการ Note พร้อมซ่อนชื่อตามสิทธิ์
       const noteList = document.getElementById('noteList');
       noteList.innerHTML = "";
+      
       if (selectedPaper.notes && selectedPaper.notes.length > 0) {
-        selectedPaper.notes.forEach(note => {
-          if (note.trim() !== "") {
+        selectedPaper.notes.forEach(n => {
+          if (n.content.trim() !== "") {
             let div = document.createElement('div');
-            div.className = "mb-1 border-bottom pb-1";
-            div.innerText = "• " + note;
+            div.className = "mb-2 border-bottom pb-1";
+            
+            let displayName = "Reviewer"; // ค่าเริ่มต้นสำหรับนักเรียน
+            
+            // ถ้าเป็นอาจารย์ (S) ให้เห็นชื่อจริง
+            if (!currentUser.isStudent) {
+              displayName = n.author || "System";
+            } 
+            // ถ้านักเรียน (Y) อ่านโน้ตที่ตัวเองเขียนเอง (กรณีมีระบบ Peer Review) ให้เห็นชื่อตัวเอง
+            else if (n.author === currentUser.staffName) {
+              displayName = "ฉัน (Me)";
+            }
+
+            div.innerHTML = `<span class="fw-bold text-dark">${displayName}:</span> <span class="text-muted">${n.content}</span>`;
             noteList.appendChild(div);
           }
         });
       } else {
         noteList.innerHTML = "<em>ยังไม่มีข้อเสนอแนะ</em>";
       }
-
+  
       // 🟢 แบ่งสิทธิ์การใช้งานปุ่มประเมิน
       if (currentUser.isStudent) { 
         // 1. ถ้านักเรียน (Y1-Y4)
