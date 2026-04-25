@@ -391,6 +391,33 @@ function showPaperDetails() {
         checkNoteRequired();
       }
     }
+
+    function startReview() {
+      document.getElementById('selectionPage').classList.add('hidden'); document.getElementById('reviewPage').classList.remove('hidden');
+      document.getElementById('reviewTitle').innerText = selectedPaper.title;
+      document.getElementById('resultSelect').value = ""; document.getElementById('noteInput').value = ""; checkNoteRequired();
+    }
+
+    function checkNoteRequired() { document.getElementById('noteStar').classList.toggle('hidden', document.getElementById('resultSelect').value !== 'FAIL'); }
+    function cancelReview() { document.getElementById('reviewPage').classList.add('hidden'); document.getElementById('selectionPage').classList.remove('hidden'); }
+
+    async function submitReview() {
+      const result = document.getElementById('resultSelect').value;
+      const note = document.getElementById('noteInput').value;
+      if(!result) return alert("กรุณาเลือกผลการตรวจ");
+      if(result === 'FAIL' && !note.trim()) return alert("กรุณาระบุ Note");
+
+      showLoading("กำลังบันทึกและตรวจสอบอุปกรณ์...");
+      const client = await getClientDetails();
+      let sigupData = lineData.displayName ? `${lineData.displayName},${client.deviceType},${client.os},${client.ip}` : `${client.deviceType},${client.os},${client.browser},${client.ip}`;
+
+      const formData = { sheetName: document.getElementById('sheetSelect').value, rowNumber: selectedPaper.rowNumber, staffName: currentUser.staffName, result: result, note: note, sigup: sigupData };
+      const res = await callAPI({ action: 'submitReview', formData: formData });
+      hideLoading();
+
+      if(res && res.success) { alert("บันทึกผลสำเร็จ!"); loadPapers(); cancelReview(); } else { alert("บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง"); }
+    }
+
     
     function logout() {
       document.getElementById('selectionPage').classList.add('hidden'); document.getElementById('loginPage').classList.remove('hidden');
