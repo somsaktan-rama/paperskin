@@ -91,25 +91,48 @@
     </div>
   </div>
 
-  <div id="reviewPage" class="container hidden" style="max-width: 600px;">
+<div id="reviewPage" class="container hidden" style="max-width: 600px;">
     <div class="card p-4">
-      <h5 class="mb-3 text-primary">ลงผลการตรวจ</h5>
+      <h5 id="pageHeader" class="mb-3 text-primary">ลงผลการตรวจ</h5>
       <h6 id="reviewTitle" class="mb-4 text-dark fw-bold"></h6>
-      <label class="fw-bold mb-1">ผลการตรวจ (Result):</label>
-      <select id="resultSelect" class="form-select mb-3" onchange="checkNoteRequired()">
-        <option value="">-- เลือกผล --</option>
-        <option value="PASS">PASS</option>
-        <option value="FAIL">FAIL</option>
-      </select>
-      <label class="fw-bold mb-1">ข้อเสนอแนะ (Note):</label> <span id="noteStar" class="text-danger hidden">*</span>
-      <textarea id="noteInput" class="form-control mb-4" rows="3" placeholder="ระบุเหตุผล (บังคับกรอกหาก FAIL)"></textarea>
-      <div class="d-flex gap-2">
-        <button class="btn btn-secondary w-50" onclick="cancelReview()">ยกเลิก / กลับ</button>
-        <button id="btnSubmit" class="btn btn-success w-50" onclick="submitReview()">ยืนยันผล</button>
+      
+      <div id="evaluationForm">
+        <label class="fw-bold mb-1">ผลการตรวจ (Result):</label>
+        <select id="resultSelect" class="form-select mb-3" onchange="checkNoteRequired()">
+          <option value="">-- เลือกผล --</option>
+          <option value="PASS">PASS</option>
+          <option value="FAIL">FAIL</option>
+        </select>
+
+        <label class="fw-bold mb-1">ข้อเสนอแนะ (Note):</label> <span id="noteStar" class="text-danger hidden">*</span>
+        <textarea id="noteInput" class="form-control mb-4" rows="3" placeholder="ระบุเหตุผล (บังคับกรอกหาก FAIL)"></textarea>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-secondary w-50" onclick="cancelReview()">ยกเลิก / กลับ</button>
+          <button id="btnSubmit" class="btn btn-success w-50" onclick="submitReview()">ยืนยันผล</button>
+        </div>
       </div>
+
+      <div id="feedbackView" class="hidden">
+        <div class="d-flex justify-content-between mb-3 p-3 bg-light rounded border">
+          <div class="text-center w-50 border-end">
+            <div class="small text-muted">PASS</div>
+            <div class="fs-3 fw-bold text-success" id="fbPass">0</div>
+          </div>
+          <div class="text-center w-50">
+            <div class="small text-muted">FAIL</div>
+            <div class="fs-3 fw-bold text-danger" id="fbFail">0</div>
+          </div>
+        </div>
+        <label class="fw-bold mb-2">ข้อเสนอแนะจากผู้ตรวจ:</label>
+        <div id="fbNotes" class="mb-4 p-3 border rounded" style="background-color: #f8f9fa; min-height: 100px; max-height: 300px; overflow-y: auto;">
+          </div>
+        <button class="btn btn-secondary w-100 fs-5 py-2 fw-bold" onclick="cancelReview()">กลับหน้าหลัก</button>
+      </div>
+
     </div>
   </div>
-
+  
   <script>
     // ⚠️ 1. ใส่ URL API ของ Google Apps Script ที่ลงท้ายด้วย /exec
     const API_URL = 'https://script.google.com/macros/s/AKfycbxOz9i0x2Qzfc036Gb5r2Tk02TOaAEnxlCp9nP7Lj7nK9HSqa9jOC9E68hIugcLQWk/exec'; 
