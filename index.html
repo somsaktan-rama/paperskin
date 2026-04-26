@@ -456,10 +456,28 @@ function showPaperDetails() {
       if(res && res.success) { alert("บันทึกผลสำเร็จ!"); loadPapers(); cancelReview(); } else { alert("บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง"); }
     }
 
-    function logout() {
-      document.getElementById('selectionPage').classList.add('hidden'); document.getElementById('loginPage').classList.remove('hidden');
-      document.getElementById('mdidInput').value = ""; document.getElementById('sheetSelect').value = ""; document.getElementById('paperSelect').innerHTML = '<option value="">-- รอการดึงข้อมูล --</option>';
-      document.getElementById('paperDetails').classList.add('hidden'); document.getElementById('btnStartReview').classList.add('hidden'); currentUser = {};
+function logout() {
+      // 1. สลับหน้าจอกลับไปหน้า Login
+      document.getElementById('selectionPage').classList.add('hidden'); 
+      document.getElementById('loginPage').classList.remove('hidden');
+      
+      // 2. เคลียร์ข้อมูลฟอร์มและรายชื่อบทความ
+      document.getElementById('mdidInput').value = ""; 
+      document.getElementById('sheetSelect').value = ""; 
+      document.getElementById('paperSelect').innerHTML = '<option value="">-- รอการดึงข้อมูล --</option>';
+      document.getElementById('paperDetails').classList.add('hidden'); 
+      document.getElementById('btnStartReview').classList.add('hidden'); 
+      
+      // 🟢 3. เคลียร์หน้าจอแสดงผลคะแนนสอบ (ส่วนที่เพิ่มใหม่)
+      const scorePage = document.getElementById('scorePage');
+      if(scorePage) {
+        scorePage.classList.add('hidden');
+        document.getElementById('displayMdid').innerText = "";
+        document.getElementById('scoreFileList').innerHTML = '<div class="text-muted italic">กำลังค้นหาไฟล์คะแนน...</div>';
+      }
+
+      // 4. ล้างข้อมูลผู้ใช้งานในระบบ
+      currentUser = {};
     }
   </script>
 </body>
