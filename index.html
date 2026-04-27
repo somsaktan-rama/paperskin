@@ -184,7 +184,7 @@
           statusEl.className = "small mb-3 text-success fw-bold";
         } else {
           // 🟢 กรณีเข้าผ่าน PC แล้วยังไม่ได้ล็อกอิน ให้สร้างปุ่มกดเพื่อเปิดหน้าสแกน QR Code
-          statusEl.innerHTML = `⚠️ กรุณายืนยันตัวตนเพื่อสิทธิ์ในการประเมิน<br><button class="btn btn-sm btn-success mt-2 px-4 rounded-pill fw-bold" onclick="liff.login()">คลิกล็อกอินด้วย LINE</button>`;
+          statusEl.innerHTML = `⚠️ กรุณายืนยันตัวตนเพื่อสิทธิ์ในการประเมิน/ดูคะแนนสอบ<br><button class="btn btn-sm btn-success mt-2 px-4 rounded-pill fw-bold" onclick="liff.login()">คลิกล็อกอินด้วย LINE</button>`;
           statusEl.className = "small mb-3 text-dark fw-bold";
         }
       } catch (err) {
