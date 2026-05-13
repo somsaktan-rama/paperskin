@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สรุปผลการตรวจบทความแพทย์ประจำบ้านตจวิทยา</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+  <style>
+    body { background-color: #f6f8fa; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .card { border-radius: 8px; border: 1px solid #d0d7de; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .table-hover tbody tr:hover { background-color: #f1f8ff; }
+    .hidden { display: none !important; }
+    #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; }
+    .spinner { border: 4px solid #e1e4e8; border-top: 4px solid #0969da; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- Loading -->
+  <div id="loadingOverlay" class="hidden">
+    <div class="spinner"></div>
+    <div class="mt-3 fw-bold text-dark" id="loadingText">กำลังโหลดข้อมูล...</div>
+  </div>
+
+  <div class="container-fluid" style="max-width: 1200px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3 class="mb-0 text-primary fw-bold">📊 สรุปผลการตรวจบทความแพทย์ประจำบ้านตจวิทยา</h3>
+      <a href="index.html" class="btn btn-outline-secondary">กลับหน้าระบบประเมิน</a>
+    </div>
+
+    <!-- ส่วนเลือก Sheet -->
+    <div class="card p-3 mb-4 bg-white">
+      <div class="row align-items-center">
+        <div class="col-md-3">
+          <label class="fw-bold mb-1">เลือกหมวดหมู่ (Sheet):</label>
+        </div>
+        <div class="col-md-6">
+          <select id="sheetSelect" class="form-select" onchange="loadDashboardData()">
+            <option value="">-- กำลังโหลดรายชื่อ Sheet --</option>
+          </select>
+        </div>
+        <div class="col-md-3 text-end mt-2 mt-md-0">
+          <span id="totalCount" class="badge bg-secondary fs-6 hidden">รวม 0 บทความ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ตารางแสดงข้อมูล -->
+    <div class="card bg-white" style="overflow-x: auto;">
+      <table class="table table-hover table-bordered mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 5%;">#</th>
+            <th style="width: 15%;">ชื่อ-สกุล</th>
+            <th style="width: 10%;">สถาบัน</th>
+            <th style="width: 35%;">ชื่อเรื่อง (Title)</th>
+            <th style="width: 15%;">ตีพิมพ์ (Publish)</th>
+            <th style="width: 20%; text-align: center;">ผลประเมิน (Result)</th>
+          </tr>
+        </thead>
+        <tbody id="dataTableBody">
+          <tr><td colspan="6" class="text-center text-muted py-4">กรุณาเลือกหมวดหมู่เพื่อดูข้อมูล</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ 1. เอา URL API (ลงท้ายด้วย /exec) มาวางตรงนี้ครับ (ใช้ลิงก์เดียวกับ index.html ได้เลย)
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzvZikwhC-QWkRipvNu219adfInzc9LTP2pNc2N0HSCOJ2282GdQ84jV60wIMjpYZE/exec'; 
+
+    function showLoading(text) { document.getElementById('loadingText').innerText = text; document.getElementById('loadingOverlay').classList.remove('hidden'); }
+    function hideLoading() { document.getElementById('loadingOverlay').classList.add('hidden'); }
+
+    async function callAPI(payload) {
+      try {
+        const response = await fetch(API_URL, { method: 'POST', redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+        return await response.json();
+      } catch (error) { return null; }
+    }
+
+    // ดึงรายชื่อ Sheet ตอนเปิดหน้าเว็บ
+    window.onload = async function() {
+      showLoading("กำลังเชื่อมต่อฐานข้อมูล...");
+      const res = await callAPI({ action: 'getDashboardSheets' });
+      hideLoading();
+      
+      const sheetSelect = document.getElementById('sheetSelect');
+      if (res && res.success) {
+        sheetSelect.innerHTML = '<option value="">-- เลือกหมวดหมู่ (Sheet) --</option>';
+        res.data.forEach(sheetName => {
+          sheetSelect.innerHTML += `<option value="${sheetName}">${sheetName}</option>`;
+        });
+      } else {
+        sheetSelect.innerHTML = '<option value="">โหลดข้อมูลไม่สำเร็จ</option>';
+        alert("เกิดข้อผิดพลาดในการดึงรายชื่อ Sheet");
+      }
+    };
+
+    // ดึงข้อมูลเมื่อเลือก Sheet
+    async function loadDashboardData() {
+      const sheetName = document.getElementById('sheetSelect').value;
+      const tbody = document.getElementById('dataTableBody');
+      const totalCount = document.getElementById('totalCount');
+      
+      if (!sheetName) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">กรุณาเลือกหมวดหมู่เพื่อดูข้อมูล</td></tr>';
+        totalCount.classList.add('hidden');
+        return;
+      }
+
+      showLoading(`กำลังดึงข้อมูล ${sheetName}...`);
+      const res = await callAPI({ action: 'getDashboardData', sheetName: sheetName });
+      hideLoading();
+
+      if (res && res.success) {
+        const papers = res.data;
+        tbody.innerHTML = "";
+        
+        if (papers.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">ไม่พบข้อมูลใน Sheet นี้</td></tr>';
+        } else {
+          papers.forEach((p, index) => {
+            // สร้าง Badge นับ P/F
+            let passBadge = `<span class="badge bg-success" style="width: 60px;">${p.passCount} PASS</span>`;
+            let failBadge = p.failCount > 0 ? `<span class="badge bg-danger" style="width: 60px;">${p.failCount} FAIL</span>` : `<span class="badge bg-secondary" style="width: 60px;">0 FAIL</span>`;
+            let displayTitle = p.title ? p.title : `<span class="text-muted italic">ยังไม่ได้ส่งชื่อเรื่อง</span>`;
+            let displayPublish = p.publish ? p.publish : "-";
+
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="text-center">${index + 1}</td>
+              <td class="fw-bold">${p.name}</td>
+              <td>${p.institute}</td>
+              <td>${displayTitle}</td>
+              <td>${displayPublish}</td>
+              <td class="text-center">${passBadge} &nbsp; ${failBadge}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+        
+        totalCount.innerText = `รวม ${papers.length} บทความ`;
+        totalCount.classList.remove('hidden');
+      } else {
+        alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
+      }
+    }
+  </script>
+</body>
+</html>
