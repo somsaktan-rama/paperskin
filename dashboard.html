@@ -123,13 +123,16 @@
           tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">ไม่พบข้อมูลใน Sheet นี้</td></tr>';
         } else {
           papers.forEach((p, index) => {
-            let passBadge = `<span class="badge bg-success" style="width: 60px;">${p.passCount} PASS</span>`;
-            let failBadge = p.failCount > 0 ? `<span class="badge bg-danger" style="width: 60px;">${p.failCount} FAIL</span>` : `<span class="badge bg-secondary" style="width: 60px;">0 FAIL</span>`;
             
-            // 🟢 กำหนดชื่อเรื่อง
+            // 🟢 กำหนดเงื่อนไขสีของป้าย PASS
+            // ถ้า passCount >= 3 ให้ใช้สีเขียว (bg-success) ถ้าไม่ถึงให้ใช้สีเหลือง (bg-warning พร้อมอักษรสีเข้ม)
+            let passClass = p.passCount >= 3 ? "bg-success" : "bg-warning text-dark";
+            let passBadge = `<span class="badge ${passClass}" style="width: 65px;">${p.passCount} PASS</span>`;
+            
+            let failBadge = p.failCount > 0 ? `<span class="badge bg-danger" style="width: 65px;">${p.failCount} FAIL</span>` : `<span class="badge bg-secondary" style="width: 65px;">0 FAIL</span>`;
+            
             let displayTitle = p.title ? p.title : `<span class="text-muted italic">ยังไม่ได้ส่งชื่อเรื่อง</span>`;
             
-            // 🟢 ถ้ามี Link ให้ครอบชื่อเรื่องด้วย <a> เพื่อให้คลิกได้ พร้อมไอคอนลิงก์
             if (p.link && p.link !== "") {
               let paperUrl = p.link.startsWith('http') ? p.link : 'https://' + p.link;
               displayTitle = `<a href="${paperUrl}" target="_blank" class="text-primary fw-bold text-decoration-none" title="คลิกดูเอกสารต้นฉบับ">${displayTitle} 🔗</a>`;
@@ -156,6 +159,7 @@
         alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
       }
     }
+    
   </script>
 </body>
 </html>
