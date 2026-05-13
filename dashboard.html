@@ -99,7 +99,7 @@
       }
     };
 
-    // ดึงข้อมูลเมื่อเลือก Sheet
+// ดึงข้อมูลเมื่อเลือก Sheet
     async function loadDashboardData() {
       const sheetName = document.getElementById('sheetSelect').value;
       const tbody = document.getElementById('dataTableBody');
@@ -123,10 +123,18 @@
           tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">ไม่พบข้อมูลใน Sheet นี้</td></tr>';
         } else {
           papers.forEach((p, index) => {
-            // สร้าง Badge นับ P/F
             let passBadge = `<span class="badge bg-success" style="width: 60px;">${p.passCount} PASS</span>`;
             let failBadge = p.failCount > 0 ? `<span class="badge bg-danger" style="width: 60px;">${p.failCount} FAIL</span>` : `<span class="badge bg-secondary" style="width: 60px;">0 FAIL</span>`;
+            
+            // 🟢 กำหนดชื่อเรื่อง
             let displayTitle = p.title ? p.title : `<span class="text-muted italic">ยังไม่ได้ส่งชื่อเรื่อง</span>`;
+            
+            // 🟢 ถ้ามี Link ให้ครอบชื่อเรื่องด้วย <a> เพื่อให้คลิกได้ พร้อมไอคอนลิงก์
+            if (p.link && p.link !== "") {
+              let paperUrl = p.link.startsWith('http') ? p.link : 'https://' + p.link;
+              displayTitle = `<a href="${paperUrl}" target="_blank" class="text-primary fw-bold text-decoration-none" title="คลิกดูเอกสารต้นฉบับ">${displayTitle} 🔗</a>`;
+            }
+
             let displayPublish = p.publish ? p.publish : "-";
 
             let tr = document.createElement('tr');
