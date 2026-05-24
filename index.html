@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ตรวจบทความ V1.02</title>
+  <title>ตรวจบทความ V1.05</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#24292f">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,7 +32,7 @@
 
   <div id="loginPage" class="container" style="max-width: 400px; margin-top: 50px;">
     <div class="card p-4 text-center">
-      <h4 class="mb-3" style="color: #24292f;">ตรวจบทความแพทย์ประจำบ้าน V1.02</h4>
+      <h4 class="mb-3" style="color: #24292f;">ตรวจบทความแพทย์ประจำบ้าน V1.05</h4>
       <div id="lineStatus" class="small mb-3 text-muted">กำลังตรวจสอบการเชื่อมต่อ LINE...</div>
       
       <input type="password" id="mdidInput" class="form-control mb-4 text-center fs-3" placeholder="เลข ว." readonly style="background-color: #f6f8fa; letter-spacing: 5px;">
@@ -60,7 +60,7 @@
 
       <div id="iosInstallBanner" class="alert alert-info mt-4 mb-0 small text-start hidden" role="alert" style="background-color: #f1f8ff; border-color: #c0d3eb; color: #0550ae;">
         <strong>📱 ทริคสำหรับผู้ใช้ iOS:</strong><br>
-        คุณสามารถกดปุ่ม Share (สี่เหลี่ยมลูกศรขึ้น) ด้านล่างจอ แล้วเลือก <strong>'Add to Home Screen'</strong> เพื่อติดตั้งระบบเป็นแอปพลิเคชันได้ครับ
+        คุณสามารถกดปุ่ม Share (สี่เหลี่ยมลูกศรขึ้น) ด้านล่างจอ แล้วเลือก <strong>'Add to Home Screen'</strong> เพื่อติดตั้งระบบเป็นแอปได้ครับ
       </div>
     </div>
   </div>
@@ -78,11 +78,27 @@
     </div>
   </div>
 
-  <div id="scorePage" class="container hidden" style="max-width: 600px; margin-bottom: 20px;">
-    <div class="card p-3" style="border-left: 5px solid #d4a017; background-color: #fffdf5;">
-      <h6 id="scoreTitle" class="fw-bold text-dark mb-2">📊 ผลคะแนนสอบของฉัน (ว. <span id="displayMdid"></span>)</h6>
-      <div id="scoreFileList" class="list-group list-group-flush small">
-        <div class="text-muted italic">กำลังค้นหาไฟล์คะแนน...</div>
+  <div id="mainMenuPage" class="container hidden" style="max-width: 400px; margin-top: 50px;">
+    <div class="card p-4 text-center border-primary shadow-sm">
+      <h4 class="mb-2 fw-bold text-dark">ระบบเมนูหลัก</h4>
+      <p id="menuUserInfo" class="text-muted small mb-4 pb-3 border-bottom"></p>
+      
+      <button class="btn btn-primary w-100 fs-5 py-3 mb-3 fw-bold shadow-sm" onclick="goToSelectionPage()">📝 ประเมินบทความ</button>
+      <button class="btn btn-warning w-100 fs-5 py-3 mb-4 fw-bold text-dark shadow-sm" onclick="goToScorePage()">📊 ผลคะแนนสอบ</button>
+      
+      <button class="btn btn-outline-danger btn-sm" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <div id="scorePage" class="container hidden" style="max-width: 600px;">
+    <div class="card p-4" style="border-top: 5px solid #d4a017;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 id="scoreTitle" class="fw-bold text-dark mb-0">📊 ผลคะแนนสอบ</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="backToMainMenu()">กลับเมนูหลัก</button>
+      </div>
+      
+      <div id="scoreFileList" class="list-group list-group-flush small border rounded p-2 bg-light" style="max-height: 60vh; overflow-y: auto;">
+        <div class="text-muted italic text-center p-3">กำลังค้นหาไฟล์คะแนน...</div>
       </div>
     </div>
   </div>  
@@ -90,10 +106,10 @@
   <div id="selectionPage" class="container hidden" style="max-width: 600px;">
     <div class="card p-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">เลือกบทความ</h5>
-        <button class="btn btn-sm btn-outline-danger" onclick="logout()">ออกจากระบบ</button>
+        <h5 class="mb-0 text-primary fw-bold">เลือกบทความ</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="backToMainMenu()">กลับเมนูหลัก</button>
       </div>
-      <p id="userInfo" class="text-muted small"></p>
+      <p id="userInfo" class="text-muted small border-bottom pb-2 mb-3"></p>
       
       <label class="fw-bold mb-1">เลือกหมวดหมู่ (Sheet):</label>
       <div class="d-flex gap-2 mb-3">
@@ -158,7 +174,7 @@
         <label class="fw-bold mb-2">ข้อเสนอแนะจากผู้ตรวจ:</label>
         <div id="fbNotes" class="mb-4 p-3 border rounded" style="background-color: #f8f9fa; min-height: 100px; max-height: 300px; overflow-y: auto;">
           </div>
-        <button class="btn btn-secondary w-100 fs-5 py-2 fw-bold" onclick="cancelReview()">กลับหน้าหลัก</button>
+        <button class="btn btn-secondary w-100 fs-5 py-2 fw-bold" onclick="cancelReview()">กลับไปเลือกบทความ</button>
       </div>
     </div>
   </div>
@@ -204,6 +220,17 @@
             statusEl.innerText = "✅ ยืนยันตัวตนผ่าน PC: " + lineData.displayName;
           }
           statusEl.className = "small mb-3 text-success fw-bold";
+
+          // 🟢 ทดสอบล็อกอินอัตโนมัติ (Auto-Login)
+          showLoading("กำลังตรวจสอบบัญชี LINE...");
+          const res = await callAPI({ action: 'autoLoginLine', lineUid: lineData.uid, lineName: lineData.displayName });
+          hideLoading();
+          
+          // ถ้าเคยผูกบัญชีแล้ว ให้เข้าเมนูหลักทันที
+          if (res && res.success) {
+            handleSuccessfulLogin(res, res.mdid);
+          }
+
         } else {
           statusEl.innerHTML = `⚠️ กรุณายืนยันตัวตนเพื่อสิทธิ์ในการประเมิน/ดูคะแนนสอบ<br><button class="btn btn-sm btn-success mt-2 px-4 rounded-pill fw-bold" onclick="liff.login()">คลิกล็อกอินด้วย LINE</button>`;
           statusEl.className = "small mb-3 text-dark fw-bold";
@@ -241,27 +268,39 @@
           if (ip !== "Unknown IP") break; 
         } catch (err) { clearTimeout(timeoutId); }
       }
-
       const ua = navigator.userAgent;
-      let browser = "Unknown Browser";
-      let os = "Unknown OS";
-      let deviceType = "Desktop";
-      if (/Tablet|iPad/i.test(ua) || (ua.includes("Android") && !ua.includes("Mobile"))) { deviceType = "Tablet"; } 
-      else if (/Mobile|iPhone|Android|Windows Phone/i.test(ua)) { deviceType = "Mobile"; }
-
-      if (ua.includes("Win")) os = "Windows";
-      else if (ua.includes("Mac")) { if (navigator.maxTouchPoints > 1) { os = "iPadOS"; deviceType = "Tablet"; } else { os = "macOS"; } }
-      else if (ua.includes("iPhone")) os = "iOS"; else if (ua.includes("iPad")) os = "iPadOS";
-      else if (ua.includes("Android")) os = "Android"; else if (ua.includes("Linux")) os = "Linux";
-      if (ua.includes("Line") || ua.includes("LIFF")) browser = "LINE";
-      else if (ua.includes("Firefox")) browser = "Firefox";
-      else if (ua.includes("SamsungBrowser")) browser = "SamsungInternet";
-      else if (ua.includes("Opera") || ua.includes("OPR") || ua.includes("Brave")) browser = "Opera/Brave";
-      else if (ua.includes("Edg")) browser = "Edge"; else if (ua.includes("Chrome")) browser = "Chrome";
-      else if (ua.includes("Safari")) browser = "Safari"; else browser = "Other";
+      let browser = "Unknown Browser"; let os = "Unknown OS"; let deviceType = "Desktop";
+      if (/Tablet|iPad/i.test(ua) || (ua.includes("Android") && !ua.includes("Mobile"))) { deviceType = "Tablet"; } else if (/Mobile|iPhone|Android|Windows Phone/i.test(ua)) { deviceType = "Mobile"; }
+      if (ua.includes("Win")) os = "Windows"; else if (ua.includes("Mac")) { if (navigator.maxTouchPoints > 1) { os = "iPadOS"; deviceType = "Tablet"; } else { os = "macOS"; } } else if (ua.includes("iPhone")) os = "iOS"; else if (ua.includes("iPad")) os = "iPadOS"; else if (ua.includes("Android")) os = "Android"; else if (ua.includes("Linux")) os = "Linux";
+      if (ua.includes("Line") || ua.includes("LIFF")) browser = "LINE"; else if (ua.includes("Firefox")) browser = "Firefox"; else if (ua.includes("SamsungBrowser")) browser = "SamsungInternet"; else if (ua.includes("Opera") || ua.includes("OPR") || ua.includes("Brave")) browser = "Opera/Brave"; else if (ua.includes("Edg")) browser = "Edge"; else if (ua.includes("Chrome")) browser = "Chrome"; else if (ua.includes("Safari")) browser = "Safari"; else browser = "Other";
       return { ip, browser, os, deviceType };
     }
 
+    // 🟢 ระบบรวมการจัดหน้าเมื่อ Login สำเร็จ
+    function handleSuccessfulLogin(res, mdid) {
+      currentUser = res;
+      currentUser.mdid = mdid;
+
+      let displayName = res.isStudent ? `${res.staffName} ${res.year}` : res.staffName;
+      let userTxt = `ผู้ใช้งาน: ${displayName} (${res.staffInst})`;
+      
+      document.getElementById('userInfo').innerText = userTxt;
+      document.getElementById('menuUserInfo').innerText = userTxt;
+      
+      const sheetSelect = document.getElementById('sheetSelect');
+      sheetSelect.innerHTML = '<option value="">-- กรุณาเลือก --</option>';
+      if(res.displaySheets && res.displaySheets.length > 0) {
+        res.displaySheets.forEach(sheetName => {
+          let opt = document.createElement('option'); opt.value = sheetName; opt.text = sheetName; sheetSelect.appendChild(opt);
+        });
+      }
+
+      // พุ่งเข้าสู่หน้าเมนูหลักทันที
+      document.getElementById('loginPage').classList.add('hidden'); 
+      document.getElementById('mainMenuPage').classList.remove('hidden');
+    }
+
+    // 🟢 การกด Login ด้วยตัวเลขบน Numpad (สำหรับครั้งแรก)
     async function login() { 
       const inputEl = document.getElementById('mdidInput');
       const mdid = inputEl.value;
@@ -272,48 +311,45 @@
       hideLoading();
       
       if(res && res.success) {
-        currentUser = res;
-        currentUser.mdid = mdid;
-
-        let displayName = res.isStudent ? `${res.staffName} ${res.year}` : res.staffName;
-        document.getElementById('userInfo').innerText = `ผู้ใช้งาน: ${displayName} (${res.staffInst})`;
-        
-        const sheetSelect = document.getElementById('sheetSelect');
-        sheetSelect.innerHTML = '<option value="">-- กรุณาเลือก --</option>';
-        if(res.displaySheets && res.displaySheets.length > 0) {
-          res.displaySheets.forEach(sheetName => {
-            let opt = document.createElement('option'); 
-            opt.value = sheetName; 
-            opt.text = sheetName; 
-            sheetSelect.appendChild(opt);
-          });
-        }
-
-        // 🟢 การแยกส่วนแสดงคะแนนระหว่างนักเรียนและอาจารย์
-        if (lineData.uid) {
-          if (res.isStudent) {
-            loadResidentScores(mdid); // ดูของตัวเอง
-          } else {
-            loadInstituteScores(res.staffInst); // ดูของสถาบัน
-          }
-        } else {
-          document.getElementById('scorePage').classList.add('hidden');
-        }
-
-        document.getElementById('loginPage').classList.add('hidden'); 
-        document.getElementById('selectionPage').classList.remove('hidden');
+        handleSuccessfulLogin(res, mdid);
       } else { 
         alert(res ? res.message : "เชื่อมต่อ API ไม่สำเร็จ");
         inputEl.value = ""; 
       }
     }
     
-    // ดึงคะแนนตัวเอง (Resident)
+    // 🟢 ระบบนำทางเมนู (Menu Navigation)
+    function goToSelectionPage() {
+      document.getElementById('mainMenuPage').classList.add('hidden');
+      document.getElementById('selectionPage').classList.remove('hidden');
+    }
+
+    function goToScorePage() {
+      if (!lineData.uid) {
+        alert("⚠️ ต้องยืนยันตัวตนด้วย LINE ก่อนเพื่อดูคะแนนครับ");
+        return;
+      }
+      
+      document.getElementById('mainMenuPage').classList.add('hidden');
+      if (currentUser.isStudent) {
+        loadResidentScores(currentUser.mdid);
+      } else {
+        loadInstituteScores(currentUser.staffInst);
+      }
+    }
+
+    function backToMainMenu() {
+      document.getElementById('selectionPage').classList.add('hidden');
+      document.getElementById('scorePage').classList.add('hidden');
+      document.getElementById('mainMenuPage').classList.remove('hidden');
+    }
+
+    // 🟢 การดึงคะแนน
     async function loadResidentScores(mdid) {
       document.getElementById('scorePage').classList.remove('hidden');
-      document.getElementById('scoreTitle').innerHTML = `📊 ผลคะแนนสอบของฉัน (ว. <span id="displayMdid">${mdid}</span>)`;
+      document.getElementById('scoreTitle').innerHTML = `ผลคะแนนสอบ (ว. ${mdid})`;
       const listEl = document.getElementById('scoreFileList');
-      listEl.innerHTML = '<div class="text-muted italic">กำลังค้นหาไฟล์คะแนน...</div>';
+      listEl.innerHTML = '<div class="text-muted italic text-center p-3">กำลังค้นหาไฟล์คะแนน...</div>';
       
       const res = await callAPI({ action: 'getScores', mdid: mdid });
       if (res && res.success && res.data.length > 0) {
@@ -326,36 +362,36 @@
             </a>`;
         });
       } else {
-        listEl.innerHTML = `<div class="p-2 text-danger">ไม่พบไฟล์คะแนนที่ลงท้ายด้วย ${mdid} ในระบบ</div>`;
+        listEl.innerHTML = `<div class="p-3 text-danger text-center">ไม่พบไฟล์คะแนนที่ลงท้ายด้วย ${mdid}</div>`;
       }
     }
 
-    // 🟢 ดึงคะแนนสถาบัน (อาจารย์)
     async function loadInstituteScores(institute) {
       document.getElementById('scorePage').classList.remove('hidden');
-      document.getElementById('scoreTitle').innerHTML = `📊 ผลคะแนนสอบ Resident (สถาบัน: ${institute})`;
+      document.getElementById('scoreTitle').innerHTML = `คะแนน Resident (สถาบัน: ${institute})`;
       const listEl = document.getElementById('scoreFileList');
-      listEl.innerHTML = '<div class="text-muted italic">กำลังค้นหาไฟล์คะแนนสถาบัน...</div>';
+      listEl.innerHTML = '<div class="text-muted italic text-center p-3">กำลังค้นหาไฟล์คะแนนสถาบัน...</div>';
       
       const res = await callAPI({ action: 'getInstituteScores', institute: institute });
       if (res && res.success && res.data.length > 0) {
         listEl.innerHTML = "";
         res.data.forEach(student => {
-          let studentHeader = `<div class="fw-bold mt-3 mb-1 text-primary">👤 ${student.residentName} (ว.${student.mdid})</div>`;
+          let studentHeader = `<div class="fw-bold mt-3 mb-1 text-primary ps-2 border-start border-3 border-primary">👤 ${student.residentName} (ว.${student.mdid})</div>`;
           listEl.innerHTML += studentHeader;
           student.files.forEach(file => {
             listEl.innerHTML += `
-              <a href="${file.url}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ms-2 mb-1 border rounded">
+              <a href="${file.url}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ms-3 mb-1 border rounded shadow-sm">
                 📄 ${file.name}
                 <span class="badge bg-info text-dark rounded-pill">เปิดดู</span>
               </a>`;
           });
         });
       } else {
-        listEl.innerHTML = `<div class="p-2 text-danger">ยังไม่มีไฟล์คะแนนของ Resident ในสถาบัน ${institute}</div>`;
+        listEl.innerHTML = `<div class="p-3 text-danger text-center">ยังไม่มีไฟล์คะแนนของ Resident ในสถาบัน ${institute}</div>`;
       }
     }
     
+    // 🟢 ระบบดึงบทความและประเมิน
     async function loadPapers() {
       const sheet = document.getElementById('sheetSelect').value;
       const paperDropdown = document.getElementById('paperSelect');
@@ -450,7 +486,7 @@
         if (selectedPaper.notes && selectedPaper.notes.length > 0) {
           selectedPaper.notes.forEach(n => {
             if (n.content.trim() !== "") {
-              let displayName = "Reviewer"; // ปิดชื่อ
+              let displayName = "Reviewer";
               fbNotes.innerHTML += `<div class="mb-2 pb-2 border-bottom"><span class="fw-bold text-primary">${displayName}:</span> <span class="text-dark">${n.content}</span></div>`;
             }
           });
@@ -481,7 +517,7 @@
       if(!result) return alert("กรุณาเลือกผลการตรวจ");
       if(result === 'FAIL' && !note.trim()) return alert("กรุณาระบุ Note");
 
-      showLoading("กำลังบันทึกและตรวจสอบอุปกรณ์...");
+      showLoading("กำลังบันทึก...");
       const client = await getClientDetails();
       let sigupData = lineData.displayName ? `${lineData.displayName},${client.deviceType},${client.os},${client.ip}` : `${client.deviceType},${client.os},${client.browser},${client.ip}`;
       const formData = { sheetName: document.getElementById('sheetSelect').value, rowNumber: selectedPaper.rowNumber, staffName: currentUser.staffName, result: result, note: note, sigup: sigupData };
@@ -492,38 +528,30 @@
     }
 
     function logout() {
+      // ซ่อนหน้าจอทั้งหมดและแสดงเฉพาะ Login
+      document.getElementById('mainMenuPage').classList.add('hidden');
       document.getElementById('selectionPage').classList.add('hidden');
       document.getElementById('loginPage').classList.remove('hidden');
       
+      // ล้างข้อมูลฟอร์ม
       document.getElementById('mdidInput').value = ""; 
       document.getElementById('sheetSelect').value = "";
       document.getElementById('paperSelect').innerHTML = '<option value="">-- รอการดึงข้อมูล --</option>';
       document.getElementById('paperDetails').classList.add('hidden'); 
       document.getElementById('btnStartReview').classList.add('hidden'); 
       
+      // ล้างคะแนน
       const scorePage = document.getElementById('scorePage');
       if(scorePage) {
         scorePage.classList.add('hidden');
-        // รีเซ็ตหัวข้อกลับเป็นค่าเริ่มต้น
-        document.getElementById('scoreTitle').innerHTML = '📊 ผลคะแนนสอบของฉัน (ว. <span id="displayMdid"></span>)';
-        document.getElementById('scoreFileList').innerHTML = '<div class="text-muted italic">กำลังค้นหาไฟล์คะแนน...</div>';
+        document.getElementById('scoreFileList').innerHTML = '<div class="text-muted italic text-center p-3">กำลังค้นหาไฟล์คะแนน...</div>';
       }
 
       currentUser = {};
     }
 
-    // 🟢 ระบบส่งอีเมลยืนยันการ Reset LINE (ส่วนใหม่)
-    function openResetPage() {
-      document.getElementById('loginPage').classList.add('hidden');
-      document.getElementById('resetLinePage').classList.remove('hidden');
-    }
-
-    function closeResetPage() {
-      document.getElementById('resetLinePage').classList.add('hidden');
-      document.getElementById('loginPage').classList.remove('hidden');
-      document.getElementById('resetMdid').value = "";
-      document.getElementById('resetEmail').value = "";
-    }
+    function openResetPage() { document.getElementById('loginPage').classList.add('hidden'); document.getElementById('resetLinePage').classList.remove('hidden'); }
+    function closeResetPage() { document.getElementById('resetLinePage').classList.add('hidden'); document.getElementById('loginPage').classList.remove('hidden'); document.getElementById('resetMdid').value = ""; document.getElementById('resetEmail').value = ""; }
 
     async function requestReset() {
       const mdid = document.getElementById('resetMdid').value;
@@ -533,26 +561,13 @@
       showLoading("กำลังส่งลิงก์เข้าอีเมล...");
       const res = await callAPI({ action: 'requestResetLine', mdid: mdid, email: email, scriptUrl: API_URL });
       hideLoading();
-      
-      if(res && res.success) {
-        alert(res.message);
-        closeResetPage();
-      } else {
-        alert(res ? res.message : "เกิดข้อผิดพลาด");
-      }
+      if(res && res.success) { alert(res.message); closeResetPage(); } else { alert(res ? res.message : "เกิดข้อผิดพลาด"); }
     }
 
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     if (isIOS && !isStandalone) { document.getElementById('iosInstallBanner').classList.remove('hidden'); }
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').then((registration) => {
-          console.log('PWA Service Worker ลงทะเบียนสำเร็จ');
-        }).catch((err) => { console.log('PWA Service Worker Error: ', err); });
-      });
-    }
+    if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').then((registration) => { console.log('PWA Service Worker ลงทะเบียนสำเร็จ'); }).catch((err) => { console.log('PWA Service Worker Error: ', err); }); }); }
   </script>
 </body>
 </html>
