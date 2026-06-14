@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ตรวจบทความ V1.06 B</title>
+  <title>ตรวจบทความ V1.06 C</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#24292f">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -354,10 +354,12 @@ async function loadResidentScores(mdid) {
       const res = await callAPI({ action: 'getScores', mdid: mdid });
       if (res && res.success && res.data.length > 0) {
         listEl.innerHTML = "";
-        res.data.forEach(file => {
-          // 🟢 แก้ไข: เปลี่ยนจาก href เป็นการเรียกฟังก์ชันดาวน์โหลดแบบ Secure
+      res.data.forEach(file => {
+          // 🟢 สร้างลิงก์ Proxy โดยเรียกใช้งาน doGet แทน
+          let proxyUrl = API_URL + "?action=downloadFile&fileId=" + file.id;
+          
           listEl.innerHTML += `
-            <a href="javascript:void(0)" onclick="downloadScoreFile('${file.id}', '${file.name}')" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <a href="${proxyUrl}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
               📄 ${file.name}
               <span class="badge bg-primary rounded-pill">เปิดดู</span>
             </a>`;
@@ -379,10 +381,12 @@ async function loadInstituteScores(institute) {
         res.data.forEach(student => {
           let studentHeader = `<div class="fw-bold mt-3 mb-1 text-primary ps-2 border-start border-3 border-primary">👤 ${student.residentName} (ว.${student.mdid})</div>`;
           listEl.innerHTML += studentHeader;
-          student.files.forEach(file => {
-            // 🟢 แก้ไข: เปลี่ยน href เป็น javascript:void(0) และเรียก onclick="downloadScoreFile(...)"
+      student.files.forEach(file => {
+            // 🟢 สร้างลิงก์ Proxy สำหรับอาจารย์
+            let proxyUrl = API_URL + "?action=downloadFile&fileId=" + file.id;
+            
             listEl.innerHTML += `
-              <a href="javascript:void(0)" onclick="downloadScoreFile('${file.id}', '${file.name}')" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ms-3 mb-1 border rounded shadow-sm">
+              <a href="${proxyUrl}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ms-3 mb-1 border rounded shadow-sm">
                 📄 ${file.name}
                 <span class="badge bg-info text-dark rounded-pill">เปิดดู</span>
               </a>`;
@@ -555,40 +559,6 @@ async function loadInstituteScores(institute) {
     function openResetPage() { document.getElementById('loginPage').classList.add('hidden'); document.getElementById('resetLinePage').classList.remove('hidden'); }
     function closeResetPage() { document.getElementById('resetLinePage').classList.add('hidden'); document.getElementById('loginPage').classList.remove('hidden'); document.getElementById('resetMdid').value = ""; document.getElementById('resetEmail').value = ""; }
 
-// 🟢 ฟังก์ชันใหม่: เรียก API ดึงข้อมูลไฟล์ และแสดงผลผ่าน Browser
-async function downloadScoreFile(fileId, fileName) {
-      showLoading("กำลังโหลดไฟล์... (ระบบ Secure Proxy)");
-      
-      const res = await callAPI({ action: 'downloadFile', fileId: fileId });
-      hideLoading();
-      
-      if (res && res.success) {
-        // 1. แปลงตัวอักษร Base64 กลับเป็นไฟล์ข้อมูล (Blob)
-        const byteCharacters = atob(res.base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: res.mimeType });
-        const blobUrl = URL.createObjectURL(blob);
-        
-        // 2. แก้ปัญหา Popup Blocker: สร้างลิงก์จำลองแล้วสั่งคลิกเพื่อดาวน์โหลด/เปิดไฟล์
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = fileName; // สั่งให้ดาวน์โหลดและตั้งชื่อไฟล์ตามต้นฉบับ
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // 3. คืนหน่วยความจำให้เบราว์เซอร์
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-
-      } else {
-        alert("❌ เกิดข้อผิดพลาด: " + (res ? res.message : "ไม่สามารถเชื่อมต่อได้ (ลอง Deploy Backend ใหม่อีกครั้ง)"));
-      }
-    }
-    
     async function requestReset() {
       const mdid = document.getElementById('resetMdid').value;
       const email = document.getElementById('resetEmail').value;
