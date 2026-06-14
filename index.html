@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ตรวจบทความ V1.06</title>
+  <title>ตรวจบทความ V1.06 A</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#24292f">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -556,7 +556,7 @@ async function loadInstituteScores(institute) {
     function closeResetPage() { document.getElementById('resetLinePage').classList.add('hidden'); document.getElementById('loginPage').classList.remove('hidden'); document.getElementById('resetMdid').value = ""; document.getElementById('resetEmail').value = ""; }
 
 // 🟢 ฟังก์ชันใหม่: เรียก API ดึงข้อมูลไฟล์ และแสดงผลผ่าน Browser
-    async function downloadScoreFile(fileId, fileName) {
+async function downloadScoreFile(fileId, fileName) {
       showLoading("กำลังโหลดไฟล์... (ระบบ Secure Proxy)");
       
       const res = await callAPI({ action: 'downloadFile', fileId: fileId });
@@ -571,15 +571,21 @@ async function loadInstituteScores(institute) {
         }
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: res.mimeType });
-        
-        // 2. สร้างลิงก์จำลอง (Object URL) ขึ้นมาบนเบราว์เซอร์
         const blobUrl = URL.createObjectURL(blob);
         
-        // 3. เปิดไฟล์ในแท็บใหม่ (รองรับทั้งมือถือ, iPad, PC)
-        window.open(blobUrl, "_blank");
+        // 2. แก้ปัญหา Popup Blocker: สร้างลิงก์จำลองแล้วสั่งคลิกเพื่อดาวน์โหลด/เปิดไฟล์
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = fileName; // สั่งให้ดาวน์โหลดและตั้งชื่อไฟล์ตามต้นฉบับ
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // 3. คืนหน่วยความจำให้เบราว์เซอร์
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
 
       } else {
-        alert("❌ เกิดข้อผิดพลาด: " + (res ? res.message : "ไม่สามารถเชื่อมต่อได้"));
+        alert("❌ เกิดข้อผิดพลาด: " + (res ? res.message : "ไม่สามารถเชื่อมต่อได้ (ลอง Deploy Backend ใหม่อีกครั้ง)"));
       }
     }
     
